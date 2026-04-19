@@ -8,11 +8,22 @@ import Settings from './components/Settings'
 import CreatePostModal from './components/CreatePostModal'
 import { mockPosts } from './data/mockData'
 
+import { storage } from './lib/storage'
+import { PremiumCalendar } from './components/PremiumCalendar'
+import AnalyticsDashboard from './components/AnalyticsDashboard'
+
 export default function App() {
-  const [view, setView] = useState('calendar')
+  const [view, setView] = useState('analytics') // Default to analytics for the "wow" factor now
+  const [posts, setPosts] = useState(() => storage.loadPosts())
   const [activePlatforms, setActivePlatforms] = useState(new Set(['x', 'linkedin', 'instagram']))
   const [showModal, setShowModal] = useState(false)
   const [currentMonth, setCurrentMonth] = useState(new Date(2026, 3, 1)) // April 2026
+
+  const handleAddPost = (newPost) => {
+    const updated = storage.addPost(newPost)
+    setPosts(updated)
+    setShowModal(false)
+  }
 
   const togglePlatform = (id) => {
     setActivePlatforms(prev => {
@@ -26,7 +37,7 @@ export default function App() {
     })
   }
 
-  const visiblePosts = mockPosts.filter(p => activePlatforms.has(p.platform))
+  const visiblePosts = posts.filter(p => activePlatforms.has(p.platform))
 
   return (
     <>
@@ -55,13 +66,13 @@ export default function App() {
             />
 
             <div className="page-container">
-              <div className="page-content">
+              <div className="page-content" style={{ padding: '40px' }}>
                 {view === 'calendar' && (
-                  <CalendarView
+                  <PremiumCalendar
                     posts={visiblePosts}
-                    currentMonth={currentMonth}
                   />
                 )}
+                {view === 'analytics' && <AnalyticsDashboard />}
                 {view === 'list' && (
                   <ListView posts={visiblePosts} />
                 )}
@@ -71,7 +82,10 @@ export default function App() {
           </div>
 
           {showModal && (
-            <CreatePostModal onClose={() => setShowModal(false)} />
+            <CreatePostModal 
+              onClose={() => setShowModal(false)} 
+              onSave={handleAddPost}
+            />
           )}
         </div>
       </SignedIn>

@@ -9,13 +9,32 @@ const PLATFORMS = [
 
 const PLATFORM_LABELS = { x: 'X', linkedin: 'in', instagram: 'IG' }
 
-export default function CreatePostModal({ onClose }) {
+export default function CreatePostModal({ onClose, onSave }) {
   const [selectedPlatforms, setSelectedPlatforms] = useState(new Set(['x']))
   const [youtubeUrl, setYoutubeUrl]               = useState('')
   const [content, setContent]                     = useState('')
   const [scheduleDate, setScheduleDate]           = useState('2026-04-20')
   const [scheduleTime, setScheduleTime]           = useState('09:00')
   const [isGenerating, setIsGenerating]           = useState(false)
+
+  const handleSave = () => {
+    if (!content.trim()) return
+    
+    // Pick the first platform as the primary one for the chip
+    const primaryPlatform = Array.from(selectedPlatforms)[0]
+    
+    const newPost = {
+      id: Date.now(),
+      platform: primaryPlatform,
+      date: scheduleDate,
+      time: scheduleTime,
+      status: 'scheduled',
+      content: content,
+      engagement: null
+    }
+    
+    onSave(newPost)
+  }
 
   const handleGenerate = async () => {
     if (!youtubeUrl) return
@@ -208,7 +227,11 @@ export default function CreatePostModal({ onClose }) {
             <FileText size={13} style={{ marginRight: 5 }} />
             Save Draft
           </button>
-          <button className="modal-btn-primary" disabled={!content.trim() && !youtubeUrl}>
+          <button 
+            className="modal-btn-primary" 
+            disabled={!content.trim()}
+            onClick={handleSave}
+          >
             <Send size={13} />
             Schedule Post
           </button>

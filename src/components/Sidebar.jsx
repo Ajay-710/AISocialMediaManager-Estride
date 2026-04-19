@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Calendar, LayoutList, Settings, Plus, LogOut, Grid, ChevronDown, ChevronRight, Share2 } from 'lucide-react'
+import { Calendar, LayoutList, Settings, Plus, LogOut, Grid, ChevronDown, ChevronRight, Share2, BarChart3 } from 'lucide-react'
 import { UserButton, useUser, SignOutButton } from '@clerk/clerk-react'
 
 // Pure React/CSS Collapsible to maintain the exact aesthetic without Tailwind clashes
@@ -44,9 +44,10 @@ export default function Sidebar({ view, setView, onCreatePost }) {
   const { user } = useUser();
 
   const navItems = [
-    { id: 'calendar', label: 'Calendar',     icon: Calendar },
-    { id: 'list',     label: 'Content List', icon: LayoutList },
-    { id: 'settings', label: 'Settings',     icon: Settings },
+    { id: 'calendar',  label: 'Calendar',      icon: Calendar },
+    { id: 'analytics', label: 'Analytics',     icon: BarChart3 },
+    { id: 'list',      label: 'Content List',  icon: LayoutList },
+    { id: 'settings',  label: 'Settings',      icon: Settings },
   ]
 
   return (
