@@ -9,4 +9,9 @@ export default defineConfig({
   optimizeDeps: {
     include: ['react', 'react-dom', 'framer-motion'],
   },
+  server: {
+    proxy: {
+      '/api': 'http://localhost:3001'
+    }
+  }
 })

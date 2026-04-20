@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently \"vite\" \"node server/index.js\"",
     "build": "vite build",
     "preview": "vite preview"
   },
@@ -12,8 +12,12 @@
     "@clerk/clerk-react": "^5.61.5",
     "@tailwindcss/postcss": "^4.2.2",
     "autoprefixer": "^10.5.0",
+    "better-sqlite3": "^12.9.0",
     "clsx": "^2.1.1",
+    "concurrently": "^9.2.1",
+    "cors": "^2.8.6",
     "date-fns": "^4.1.0",
+    "express": "^5.2.1",
     "framer-motion": "^12.38.0",
     "lucide-react": "^0.395.0",
     "postcss": "^8.5.10",

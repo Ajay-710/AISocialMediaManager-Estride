@@ -58,10 +58,10 @@ export default function Sidebar({ view, setView, onCreatePost }) {
           <div style={{
             position: 'absolute',
             inset: -4,
-            background: 'linear-gradient(135deg, var(--accent), var(--teal))',
+            background: 'linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05))',
             borderRadius: '10px',
             filter: 'blur(10px)',
-            opacity: 0.5
+            opacity: 0.8
           }} />
           <img 
             src="/logo.png" 

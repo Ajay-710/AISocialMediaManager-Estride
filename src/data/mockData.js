@@ -187,7 +187,7 @@ What's the metric you wish you'd tracked earlier?`,
 ]
 
 export const PLATFORMS = [
-  { id: 'x',         label: 'X',         color: '#1D9BF0' },
-  { id: 'linkedin',  label: 'LinkedIn',  color: '#3B82F6' },
-  { id: 'instagram', label: 'Instagram', color: '#E1306C' },
+  { id: 'x',         label: 'X',         color: '#E7E9EA' },
+  { id: 'linkedin',  label: 'LinkedIn',  color: '#60A5FA' },
+  { id: 'instagram', label: 'Instagram', color: '#F43F5E' },
 ]

@@ -1,27 +1,37 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { SignedIn, SignedOut, SignIn } from '@clerk/clerk-react'
+import { motion, AnimatePresence } from 'framer-motion'
 import Sidebar from './components/Sidebar'
 import Header from './components/Header'
 import CalendarView from './components/CalendarView'
 import ListView from './components/ListView'
 import Settings from './components/Settings'
 import CreatePostModal from './components/CreatePostModal'
-import { mockPosts } from './data/mockData'
+import { PLATFORMS } from './data/mockData'
 
 import { storage } from './lib/storage'
-import { PremiumCalendar } from './components/PremiumCalendar'
+import { SingleMonthCalendar } from './components/SingleMonthCalendar'
 import AnalyticsDashboard from './components/AnalyticsDashboard'
 
 export default function App() {
-  const [view, setView] = useState('analytics') // Default to analytics for the "wow" factor now
-  const [posts, setPosts] = useState(() => storage.loadPosts())
+  const [view, setView] = useState('calendar')
+  const [posts, setPosts] = useState([])
   const [activePlatforms, setActivePlatforms] = useState(new Set(['x', 'linkedin', 'instagram']))
   const [showModal, setShowModal] = useState(false)
-  const [currentMonth, setCurrentMonth] = useState(new Date(2026, 3, 1)) // April 2026
+  const [isLoading, setIsLoading] = useState(true)
 
-  const handleAddPost = (newPost) => {
-    const updated = storage.addPost(newPost)
-    setPosts(updated)
+  useEffect(() => {
+    storage.loadPosts().then(data => {
+      setPosts(data)
+      setIsLoading(false)
+    })
+  }, [])
+
+  const handleAddPost = async (newPost) => {
+    const added = await storage.addPost(newPost)
+    if (added) {
+      setPosts(prev => [added, ...prev])
+    }
     setShowModal(false)
   }
 
@@ -58,25 +68,78 @@ export default function App() {
           <div className="main-content">
             <Header
               view={view}
-              activePlatforms={activePlatforms}
-              onTogglePlatform={togglePlatform}
               onCreatePost={() => setShowModal(true)}
-              currentMonth={currentMonth}
-              setCurrentMonth={setCurrentMonth}
             />
 
             <div className="page-container">
-              <div className="page-content" style={{ padding: '40px' }}>
-                {view === 'calendar' && (
-                  <PremiumCalendar
-                    posts={visiblePosts}
-                  />
+              {/* Sub-header for Platform Filtering */}
+              <div style={{ 
+                padding: '20px 40px', 
+                borderBottom: '1px solid rgba(255,255,255,0.03)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                background: 'rgba(255,255,255,0.01)'
+              }}>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  {PLATFORMS.map(({ id, label, color }) => {
+                    const isActive = activePlatforms.has(id)
+                    return (
+                      <button
+                        key={id}
+                        onClick={() => togglePlatform(id)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '6px 14px',
+                          borderRadius: '10px',
+                          fontSize: '12px',
+                          fontWeight: '600',
+                          background: isActive ? `${color}15` : 'transparent',
+                          border: `1px solid ${isActive ? `${color}30` : 'rgba(255,255,255,0.05)'}`,
+                          color: isActive ? color : 'var(--text-muted)',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: isActive ? color : 'rgba(255,255,255,0.2)' }} />
+                        {label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              <div className="page-content" style={{ padding: '40px', overflowY: 'auto' }}>
+                {isLoading ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mb-4"></div>
+                    <p className="text-gray-400 font-medium">Connecting to SQLite Database...</p>
+                  </div>
+                ) : (
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={view}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.3 }}
+                      style={{ height: '100%' }}
+                    >
+                      {view === 'calendar' && (
+                        <SingleMonthCalendar
+                          posts={visiblePosts}
+                        />
+                      )}
+                      {view === 'analytics' && <AnalyticsDashboard />}
+                      {view === 'list' && (
+                        <ListView posts={visiblePosts} />
+                      )}
+                      {view === 'settings' && <Settings />}
+                    </motion.div>
+                  </AnimatePresence>
                 )}
-                {view === 'analytics' && <AnalyticsDashboard />}
-                {view === 'list' && (
-                  <ListView posts={visiblePosts} />
-                )}
-                {view === 'settings' && <Settings />}
               </div>
             </div>
           </div>
