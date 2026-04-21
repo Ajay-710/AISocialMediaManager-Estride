@@ -58,7 +58,7 @@ const ClerkUserSection = () => {
   );
 };
 
-export default function Sidebar({ view, setView, onCreatePost, demoMode = false }) {
+export default function Sidebar({ view, setView, onCreatePost }) {
   const navItems = [
     { id: 'calendar',  label: 'Calendar',      icon: Calendar },
     { id: 'analytics', label: 'Analytics',     icon: BarChart3 },
@@ -123,17 +123,7 @@ export default function Sidebar({ view, setView, onCreatePost, demoMode = false 
         </button>
 
         <div className="sidebar-user">
-          {demoMode ? (
-            <>
-              <div className="sidebar-avatar">E</div>
-              <div className="sidebar-user-info">
-                <div className="sidebar-user-name">Estride Admin</div>
-                <div className="sidebar-user-plan">Supabase Live · Active Sync</div>
-              </div>
-            </>
-          ) : (
-            <ClerkUserSection />
-          )}
+          <ClerkUserSection />
         </div>
       </div>
     </aside>
