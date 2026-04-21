@@ -1,16 +1,30 @@
+import { mockPosts } from '../data/mockData';
+
 // API client to communicate with the SQLite Express backend
 const API_URL = '/api';
+const FALLBACK_KEY = 'estride_fallback_posts';
+
+// Helper to use LocalStorage fallback when Vercel backend isn't available
+const getFallbackStorage = () => {
+  const saved = localStorage.getItem(FALLBACK_KEY);
+  if (saved) return JSON.parse(saved);
+  return mockPosts;
+};
+
+const setFallbackStorage = (posts) => {
+  localStorage.setItem(FALLBACK_KEY, JSON.stringify(posts));
+};
 
 export const storage = {
-  // Load posts asynchronously from the backend
+  // Load posts asynchronously from the backend or fallback
   loadPosts: async () => {
     try {
       const res = await fetch(`${API_URL}/posts`);
       if (!res.ok) throw new Error('Failed to fetch posts');
       return await res.json();
     } catch (e) {
-      console.error('Failed to load posts from backend:', e);
-      return [];
+      console.warn('Backend completely absent, dropping to local fallback memory:', e);
+      return getFallbackStorage();
     }
   },
 
@@ -25,8 +39,11 @@ export const storage = {
       if (!res.ok) throw new Error('Failed to add post');
       return await res.json();
     } catch (e) {
-      console.error('Failed to save post to backend:', e);
-      return null;
+      console.warn('Backend absent, saving to fallback storage.');
+      const all = getFallbackStorage();
+      const updated = [newPost, ...all];
+      setFallbackStorage(updated);
+      return newPost;
     }
   },
   
@@ -41,8 +58,10 @@ export const storage = {
       if (!res.ok) throw new Error('Failed to update post');
       return await res.json();
     } catch (e) {
-      console.error('Failed to update post on backend:', e);
-      return null;
+      const all = getFallbackStorage();
+      const mapped = all.map(p => p.id === id ? { ...p, ...updates } : p);
+      setFallbackStorage(mapped);
+      return true;
     }
   },
   
@@ -53,8 +72,9 @@ export const storage = {
       if (!res.ok) throw new Error('Failed to delete post');
       return await res.json();
     } catch (e) {
-      console.error('Failed to delete post from backend:', e);
-      return null;
+      const all = getFallbackStorage();
+      setFallbackStorage(all.filter(p => p.id !== id));
+      return true;
     }
   }
 };
