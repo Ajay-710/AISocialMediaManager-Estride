@@ -94,7 +94,7 @@ export default function Sidebar({ view, setView, onCreatePost }) {
 
       {/* Navigation */}
       <nav className="sidebar-nav">
-        <div className="sidebar-section-label">Workspace</div>
+        <div className="label-caps">Workspace</div>
         {navItems.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
@@ -118,11 +118,11 @@ export default function Sidebar({ view, setView, onCreatePost }) {
 
       {/* Bottom Profile and Actions */}
       <div className="sidebar-bottom">
-        <button className="create-btn" onClick={onCreatePost} style={{ width: '100%', marginBottom: '16px', justifyContent: 'center' }}>
-          <Plus size={16} style={{ marginRight: '6px' }} /> Create Content
+        <button className="btn-primary" onClick={onCreatePost} style={{ width: '100%', marginBottom: '24px' }}>
+          <Plus size={16} /> Create Content
         </button>
 
-        <div className="sidebar-user">
+        <div className="sidebar-user" style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '20px' }}>
           <ClerkUserSection />
         </div>
       </div>

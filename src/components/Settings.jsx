@@ -28,12 +28,12 @@ export default function Settings() {
         </div>
 
         <div className="settings-field">
-          <label className="settings-label">Your Name / Brand Name</label>
+          <label className="label-caps">Your Name / Brand Name</label>
           <input className="settings-input" type="text" placeholder="e.g. Ajay · Estride" />
         </div>
 
         <div className="settings-field">
-          <label className="settings-label">Tone of Voice</label>
+          <label className="label-caps">Tone of Voice</label>
           <input
             className="settings-input"
             type="text"
@@ -42,7 +42,7 @@ export default function Settings() {
         </div>
 
         <div className="settings-field">
-          <label className="settings-label">Target Audience</label>
+          <label className="label-caps">Target Audience</label>
           <input
             className="settings-input"
             type="text"
@@ -51,25 +51,16 @@ export default function Settings() {
         </div>
 
         <div className="settings-field">
-          <label className="settings-label">Content Pillars (comma-separated)</label>
-          <input
-            className="settings-input"
-            type="text"
-            placeholder="e.g. AI tools, content strategy, building in public, productivity"
-          />
-        </div>
-
-        <div className="settings-field">
-          <label className="settings-label">Restricted Words / Phrases</label>
+          <label className="label-caps">Restricted Words / Phrases</label>
           <textarea
             className="settings-textarea"
             placeholder="e.g. synergy, leverage, circle back, game-changer, guru"
           />
         </div>
 
-        <button className="settings-save-btn">
+        <button className="btn-primary" style={{ width: 'auto' }}>
           <Save size={14} />
-          Save Brand Voice
+          Save Global Persona
         </button>
       </div>
 
@@ -109,45 +100,6 @@ export default function Settings() {
             <Toggle defaultChecked={acc.connected} />
           </div>
         ))}
-      </div>
-
-      {/* AI Settings */}
-      <div className="settings-section">
-        <div className="settings-section-title">AI Generation</div>
-        <div className="settings-section-desc">
-          Control how Claude generates your content.
-        </div>
-
-        <div className="settings-field">
-          <label className="settings-label">Default Model</label>
-          <select className="settings-input" style={{ cursor: 'pointer' }}>
-            <option value="claude-sonnet-4-6">claude-sonnet-4-6 (default)</option>
-            <option value="claude-opus-4-7">claude-opus-4-7 (highest quality)</option>
-            <option value="claude-haiku-4-5">claude-haiku-4-5 (fastest)</option>
-          </select>
-        </div>
-
-        <div className="account-row">
-          <div className="account-info">
-            <Zap size={16} style={{ color: 'var(--status-scheduled)' }} />
-            <div>
-              <div className="account-name">Auto-generate on transcript import</div>
-              <div className="account-handle">Instantly draft posts when a YouTube URL is added</div>
-            </div>
-          </div>
-          <Toggle defaultChecked={true} />
-        </div>
-
-        <div className="account-row">
-          <div className="account-info">
-            <Zap size={16} style={{ color: 'var(--accent-light)' }} />
-            <div>
-              <div className="account-name">Require approval before scheduling</div>
-              <div className="account-handle">Always show a preview before sending to Blotato</div>
-            </div>
-          </div>
-          <Toggle defaultChecked={true} />
-        </div>
       </div>
     </div>
   )
