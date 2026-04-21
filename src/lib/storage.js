@@ -15,6 +15,7 @@ const setFallbackStorage = (posts) => {
 export const storage = {
   // Load posts from Supabase or fallback
   loadPosts: async () => {
+    if (!supabase) return getFallbackStorage();
     try {
       const { data, error } = await supabase
         .from('posts')
@@ -36,6 +37,12 @@ export const storage = {
 
   // Add a post to Supabase
   addPost: async (newPost) => {
+    if (!supabase) {
+      const all = getFallbackStorage();
+      const updated = [newPost, ...all];
+      setFallbackStorage(updated);
+      return newPost;
+    }
     try {
       const { data, error } = await supabase
         .from('posts')
@@ -58,6 +65,12 @@ export const storage = {
   
   // Update a post in Supabase
   updatePost: async (id, updates) => {
+    if (!supabase) {
+      const all = getFallbackStorage();
+      const mapped = all.map(p => p.id === id ? { ...p, ...updates } : p);
+      setFallbackStorage(mapped);
+      return true;
+    }
     try {
       const { error } = await supabase
         .from('posts')
@@ -79,6 +92,11 @@ export const storage = {
   
   // Delete a post from Supabase
   deletePost: async (id) => {
+    if (!supabase) {
+      const all = getFallbackStorage();
+      setFallbackStorage(all.filter(p => p.id !== id));
+      return true;
+    }
     try {
       const { error } = await supabase
         .from('posts')
