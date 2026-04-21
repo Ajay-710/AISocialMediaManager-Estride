@@ -37,71 +37,274 @@ if (seedCount === 0) {
   ].forEach(p => insert.run(p));
 }
 
+// ── Skill helpers ─────────────────────────────────────────────────────────────
+
+function loadSkills() {
+  let brandVoice = '';
+  let repurposeSkill = '';
+  try {
+    brandVoice     = fs.readFileSync(join(skillsDir, 'brand_voice_template.md'),    'utf-8');
+    repurposeSkill = fs.readFileSync(join(skillsDir, 'skill_repurpose_youtube.md'), 'utf-8');
+  } catch (err) {
+    console.warn('[skills] Could not load skill files:', err.message);
+  }
+  return { brandVoice, repurposeSkill };
+}
+
+async function fetchYouTubeTranscript(videoUrl) {
+  try {
+    const { YoutubeTranscript } = await import('youtube-transcript');
+    const items = await YoutubeTranscript.fetchTranscript(videoUrl);
+    return items.map(i => i.text).join(' ');
+  } catch (err) {
+    console.warn('[transcript] Fetch failed:', err.message);
+    return null;
+  }
+}
+
+// Builds the Claude system prompt directly from the skill SOP + brand voice file.
+function buildYouTubeSystemPrompt(repurposeSkill, brandVoice) {
+  return [
+    'You are an expert social media content strategist executing a strict skill protocol.',
+    '',
+    repurposeSkill,
+    '',
+    brandVoice
+      ? `## Brand Voice Reference\n\n${brandVoice}`
+      : '## Brand Voice\nTone: Direct, bold, data-driven. No fluff. No corporate buzzwords.\nAudience: Startup founders, B2B marketers, solopreneurs.',
+    '',
+    'IMPORTANT: Follow the Step-by-Step SOP above exactly. Return all posts in the exact output format specified in Step 5.',
+  ].join('\n');
+}
+
+function buildYouTubeUserMessage(videoUrl, transcript, platforms) {
+  const platformList = (platforms || ['x']).join(', ');
+  if (transcript && transcript.length > 100) {
+    return [
+      `Repurpose the following YouTube video for: ${platformList}`,
+      '',
+      `Video URL: ${videoUrl}`,
+      '',
+      '## Transcript',
+      transcript,
+    ].join('\n');
+  }
+  // Transcript unavailable — Claude should still produce quality posts based on URL context
+  return [
+    `Repurpose this YouTube video for: ${platformList}`,
+    '',
+    `Video URL: ${videoUrl}`,
+    '',
+    'No transcript was available. Generate high-quality posts following the SOP output format, ',
+    'using the video URL as context. Make reasonable inferences about the content type and topic.',
+  ].join('\n');
+}
+
+function buildTopicSystemPrompt(brandVoice) {
+  const voice = brandVoice && brandVoice.length > 200
+    ? brandVoice
+    : 'Tone: Direct, bold, data-driven. No fluff. Audience: Startup founders, B2B marketers.';
+  return [
+    'You are an expert social media content strategist writing platform-native posts.',
+    '',
+    '## Brand Voice',
+    voice,
+    '',
+    '## Output Format',
+    'Return posts in this exact format:',
+    '',
+    '---',
+    '',
+    '**[X — Post 1: Hook]**',
+    '[post text]',
+    '',
+    '---',
+    '',
+    '**[X — Post 2: Tactical]**',
+    '[post text]',
+    '',
+    '---',
+    '',
+    '**[X — Post 3: Quote/Stat]**',
+    '[post text]',
+    '',
+    '---',
+    '',
+    '**[LinkedIn — Post]**',
+    '[post text]',
+    '',
+    '---',
+    '',
+    'Rules:',
+    '- X posts: under 280 chars. Punchy, no hashtags unless essential.',
+    '- LinkedIn: 150–300 words, hook opener, narrative body, close with a discussion question.',
+    '- No fabricated statistics.',
+    '- No restricted words from the brand voice file.',
+  ].join('\n');
+}
+
+async function callClaude(systemPrompt, userMessage) {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return null;
+  try {
+    const { default: Anthropic } = await import('@anthropic-ai/sdk');
+    const client  = new Anthropic({ apiKey });
+    const message = await client.messages.create({
+      model:      'claude-sonnet-4-6',
+      max_tokens: 2048,
+      system:     systemPrompt,
+      messages:   [{ role: 'user', content: userMessage }],
+    });
+    console.log('[claude] Generated successfully');
+    return message.content[0]?.text ?? null;
+  } catch (err) {
+    console.error('[claude] API error:', err.message);
+    return null;
+  }
+}
+
+async function callN8N(payload) {
+  const webhookUrl = process.env.VITE_N8N_WEBHOOK_URL;
+  if (!webhookUrl) return null;
+  try {
+    const res = await fetch(webhookUrl, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(`N8N returned ${res.status}`);
+    const data = await res.json();
+    console.log('[n8n] Generated successfully');
+    return data.content ?? null;
+  } catch (err) {
+    console.error('[n8n] Webhook error:', err.message);
+    return null;
+  }
+}
+
+const YOUTUBE_FALLBACK = `**[X — Post 1: Hook]**
+People think editing is the hardest part of YouTube. Wrong.
+
+The hardest part is distribution.
+
+I just built a system that turns 1 video into 3 weeks of content. 🧵
+
+---
+
+**[X — Post 2: Tactical]**
+My exact repurposing stack:
+
+1. Record once
+2. Transcript → AI extracts key ideas
+3. Generate 3 X posts + 1 LinkedIn post
+4. Schedule across all platforms
+
+One video. Three weeks of pipeline.
+
+---
+
+**[X — Post 3: Quote/Stat]**
+"Your product is a commodity. Your audience is the moat."
+
+Distribution is the only unfair advantage left. Build the system.
+
+---
+
+**[LinkedIn — Post]**
+I analyzed what separates creators who plateau from those who scale.
+
+It's not talent. It's not consistency. It's distribution infrastructure.
+
+The best creators treat one long-form video as raw material — not a finished product. They extract, repurpose, and schedule systematically, not manually.
+
+The result? 5× the output with 20% of the effort.
+
+What's the biggest bottleneck in your current content workflow?`;
+
+function buildTopicFallback(topic) {
+  return `**[X — Post 1: Hook]**
+${topic ? `On ${topic}:\n\n` : ''}The counterintuitive truth nobody shares:
+
+Consistency beats talent. Every time.
+
+---
+
+**[X — Post 2: Tactical]**
+3 things that actually move the needle${topic ? ` on ${topic}` : ''}:
+
+1. Show up before you feel ready
+2. Prioritise depth over frequency
+3. Study your misses — not your hits
+
+---
+
+**[X — Post 3: Quote/Stat]**
+"The market is always right. Your taste is irrelevant."
+
+Build what resonates, not what you think should resonate.
+
+---
+
+**[LinkedIn — Post]**
+${topic ? `Here's what six months of working on ${topic} taught me:\n\n` : ''}The biggest mistake I see? Optimising for impressions instead of trust.
+
+Impressions are rented attention. Trust is owned distribution.
+
+When I switched my goal from "go viral" to "be the most useful person in the room," everything changed — quality went up, engagement went up, and ironically, reach went up too.
+
+What metric do you wish you'd focused on earlier?`;
+}
+
 // ── AI Generation ─────────────────────────────────────────────────────────────
 app.post('/api/generate', async (req, res) => {
   try {
-    const { youtubeUrl, platforms } = req.body;
-    let brandVoice = '';
-    let repurposeSkill = '';
+    const { youtubeUrl, topic, platforms = ['x'] } = req.body;
+    const { brandVoice, repurposeSkill } = loadSkills();
 
-    try {
-      brandVoice    = fs.readFileSync(join(skillsDir, 'brand_voice_template.md'),   'utf-8');
-      repurposeSkill = fs.readFileSync(join(skillsDir, 'skill_repurpose_youtube.md'), 'utf-8');
-    } catch { /* skills dir not readable, continue without */ }
+    let content = null;
 
-    const webhookUrl = process.env.VITE_N8N_WEBHOOK_URL;
-    let generatedContent = '';
-    let n8nSuccess = false;
+    if (youtubeUrl) {
+      // ── YouTube repurpose flow ────────────────────────────────────────────
+      console.log('[generate] YouTube mode:', youtubeUrl);
+      const transcript  = await fetchYouTubeTranscript(youtubeUrl);
+      const systemPrompt = buildYouTubeSystemPrompt(repurposeSkill, brandVoice);
+      const userMessage  = buildYouTubeUserMessage(youtubeUrl, transcript, platforms);
 
-    if (webhookUrl) {
-      try {
-        const aiRes = await fetch(webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ youtubeUrl, platforms, instructions: repurposeSkill, brand_voice: brandVoice, timestamp: new Date().toISOString() }),
+      content = await callClaude(systemPrompt, userMessage);
+
+      if (!content) {
+        content = await callN8N({
+          mode: 'youtube', youtubeUrl, transcript, platforms,
+          systemPrompt, userMessage,
         });
-        if (aiRes.ok) {
-          const d = await aiRes.json();
-          generatedContent = d.content;
-          n8nSuccess = true;
-        }
-      } catch (err) {
-        console.error('N8N webhook failed:', err.message);
       }
+
+      if (!content) content = YOUTUBE_FALLBACK;
+
+    } else if (topic) {
+      // ── Topic generation flow ─────────────────────────────────────────────
+      console.log('[generate] Topic mode:', topic);
+      const systemPrompt = buildTopicSystemPrompt(brandVoice);
+      const userMessage  = `Write social posts about this topic for ${platforms.join(', ')}:\n\n${topic}`;
+
+      content = await callClaude(systemPrompt, userMessage);
+
+      if (!content) {
+        content = await callN8N({
+          mode: 'topic', topic, platforms,
+          systemPrompt, userMessage,
+        });
+      }
+
+      if (!content) content = buildTopicFallback(topic);
+
+    } else {
+      return res.status(400).json({ error: 'Provide either youtubeUrl or topic.' });
     }
 
-    if (!n8nSuccess) {
-      generatedContent = `[X — Post 1: Hook]
-People think editing is the hardest part of YouTube. Wrong.
-The hardest part is distribution.
-I just built a system that turns 1 video into 3 weeks of pipeline. 🧵👇
-
----
-
-[X — Post 2: Tactical]
-My exact 4-step Ryan Doser repurposing framework:
-
-1. Ingest via Blotato
-2. Inject Brand Voice constraints
-3. Generate distinct angle hooks
-4. Automate publishing
-
-Stop doing manual data-entry. Your time is worth more.
-
----
-
-[LinkedIn — Post]
-I analyzed 500 viral videos this week.
-
-The one thing they had in common? A bulletproof distribution strategy.
-Nobody scales by clicking "Copy Link" and posting it manually everywhere.
-You scale by treating your raw video like raw material, and your tools like automated assembly lines.
-
-What's the biggest bottleneck in your team's workflow right now?`;
-    }
-
-    res.json({ content: generatedContent });
+    res.json({ content });
   } catch (err) {
+    console.error('[generate] Unhandled error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });

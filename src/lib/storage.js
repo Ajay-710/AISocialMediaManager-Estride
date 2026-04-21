@@ -74,17 +74,7 @@ export const storage = {
   },
 
   // ── Brand Voice ─────────────────────────────────────────────────────────────
-  // Requires this Supabase table (run once in SQL Editor):
-  //
-  //   CREATE TABLE brand_voice (
-  //     user_id              TEXT PRIMARY KEY,
-  //     brand_name           TEXT,
-  //     tone                 TEXT,
-  //     audience             TEXT,
-  //     restricted_words     TEXT,
-  //     ayrshare_profile_key TEXT,
-  //     updated_at           TIMESTAMPTZ DEFAULT NOW()
-  //   );
+  // Table: brand_voice (user_id PK, brand_name, tone, audience, restricted_words, ayrshare_profile_key, updated_at)
 
   loadBrandVoice: async (userId) => {
     if (!supabase || !userId) return null;
@@ -94,7 +84,6 @@ export const storage = {
         .select('*')
         .eq('user_id', userId)
         .single();
-      // PGRST116 = no row found — user hasn't saved yet, that's fine
       if (error && error.code !== 'PGRST116') throw error;
       return data || null;
     } catch (e) {
@@ -116,6 +105,42 @@ export const storage = {
       return true;
     } catch (e) {
       console.warn('Supabase saveBrandVoice failed:', e);
+      return false;
+    }
+  },
+
+  // ── Profiles ─────────────────────────────────────────────────────────────────
+  // Table: profiles (user_id PK, display_name, bio, handle_x, handle_linkedin, handle_instagram, updated_at)
+
+  loadProfile: async (userId) => {
+    if (!supabase || !userId) return null;
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+      if (error && error.code !== 'PGRST116') throw error;
+      return data || null;
+    } catch (e) {
+      console.warn('Supabase loadProfile failed:', e);
+      return null;
+    }
+  },
+
+  saveProfile: async (profileData, userId) => {
+    if (!supabase || !userId) return false;
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .upsert(
+          { ...profileData, user_id: userId, updated_at: new Date().toISOString() },
+          { onConflict: 'user_id' }
+        );
+      if (error) throw error;
+      return true;
+    } catch (e) {
+      console.warn('Supabase saveProfile failed:', e);
       return false;
     }
   },

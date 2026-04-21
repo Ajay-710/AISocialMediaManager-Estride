@@ -18,7 +18,7 @@ const today = new Date().toISOString().slice(0, 10)
 
 export default function CreatePostModal({ onClose, onSave }) {
   const [contentType, setContentType]           = useState('youtube')
-  const [selectedPlatforms, setSelectedPlatforms] = useState(new Set(['x']))
+  const [selectedPlatform, setSelectedPlatform] = useState('x')
   const [youtubeUrl, setYoutubeUrl]             = useState('')
   const [topic, setTopic]                       = useState('')
   const [content, setContent]                   = useState('')
@@ -27,18 +27,10 @@ export default function CreatePostModal({ onClose, onSave }) {
   const [isGenerating, setIsGenerating]         = useState(false)
   const [isPosting, setIsPosting]               = useState(false)
 
-  const charLimit  = selectedPlatforms.has('x') ? 280 : 3000
-  const remaining  = charLimit - content.length
-  const charPct    = Math.min((content.length / charLimit) * 100, 100)
+  const charLimit   = selectedPlatform === 'x' ? 280 : selectedPlatform === 'instagram' ? 2200 : 3000
+  const remaining   = charLimit - content.length
+  const charPct     = Math.min((content.length / charLimit) * 100, 100)
   const isOverLimit = remaining < 0
-
-  const togglePlatform = (id) => {
-    setSelectedPlatforms(prev => {
-      const next = new Set(prev)
-      if (next.has(id)) { if (next.size > 1) next.delete(id) } else { next.add(id) }
-      return next
-    })
-  }
 
   const handleGenerate = async () => {
     const source = contentType === 'youtube' ? youtubeUrl : topic
@@ -51,7 +43,7 @@ export default function CreatePostModal({ onClose, onSave }) {
         body: JSON.stringify({
           youtubeUrl: contentType === 'youtube' ? youtubeUrl : undefined,
           topic:      contentType === 'topic'   ? topic      : undefined,
-          platforms:  Array.from(selectedPlatforms),
+          platforms:  [selectedPlatform],
         }),
       })
       if (!res.ok) throw new Error('Generation failed')
@@ -69,7 +61,7 @@ export default function CreatePostModal({ onClose, onSave }) {
 
   const buildPost = (status) => ({
     id: Date.now().toString(),
-    platform: Array.from(selectedPlatforms)[0],
+    platform: selectedPlatform,
     date: scheduleDate,
     time: scheduleTime,
     status,
@@ -81,7 +73,7 @@ export default function CreatePostModal({ onClose, onSave }) {
     if (!content.trim()) return
     setIsPosting(true)
     try {
-      await socialService.postToSocials(content, Array.from(selectedPlatforms))
+      await socialService.postToSocials(content, [selectedPlatform])
       onSave(buildPost('scheduled'))
     } catch {
       alert('Error posting. Check your Ayrshare configuration in Settings.')
@@ -117,16 +109,16 @@ export default function CreatePostModal({ onClose, onSave }) {
             <div className="label-caps">Platforms</div>
             <div style={{ display: 'flex', gap: '8px' }}>
               {PLATFORMS.map(({ id, label, color }) => (
-                <button key={id} onClick={() => togglePlatform(id)} style={{
+                <button key={id} onClick={() => setSelectedPlatform(id)} style={{
                   flex: 1, padding: '10px 8px', borderRadius: '10px',
                   fontSize: '12px', fontWeight: '700',
-                  background: selectedPlatforms.has(id) ? `${color}15` : 'rgba(255,255,255,0.02)',
-                  border: `1px solid ${selectedPlatforms.has(id) ? `${color}32` : 'rgba(255,255,255,0.06)'}`,
-                  color: selectedPlatforms.has(id) ? color : 'var(--text-muted)',
+                  background: selectedPlatform === id ? `${color}15` : 'rgba(255,255,255,0.02)',
+                  border: `1px solid ${selectedPlatform === id ? `${color}32` : 'rgba(255,255,255,0.06)'}`,
+                  color: selectedPlatform === id ? color : 'var(--text-muted)',
                   cursor: 'pointer', transition: 'all 0.15s',
                   display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px',
                 }}>
-                  <div style={{ width: 7, height: 7, borderRadius: '50%', background: selectedPlatforms.has(id) ? color : 'rgba(255,255,255,0.12)' }} />
+                  <div style={{ width: 7, height: 7, borderRadius: '50%', background: selectedPlatform === id ? color : 'rgba(255,255,255,0.12)' }} />
                   {label}
                 </button>
               ))}

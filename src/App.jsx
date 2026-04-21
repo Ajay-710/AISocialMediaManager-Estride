@@ -72,7 +72,7 @@ export default function App() {
   return (
     <>
       <SignedOut>
-        <div style={{ minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: 'var(--bg-base)' }}>
+        <div style={{ minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: 'var(--bg-deep)' }}>
           <SignIn routing="hash" />
         </div>
       </SignedOut>
@@ -94,8 +94,8 @@ export default function App() {
             />
 
             <div className="page-container">
-              {/* Platform filter bar */}
-              <div style={{
+              {/* Platform filter bar — hidden on Settings */}
+              {view !== 'settings' && <div style={{
                 padding: '12px 40px',
                 borderBottom: '1px solid rgba(255,255,255,0.03)',
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -131,7 +131,7 @@ export default function App() {
                   {visiblePosts.length} post{visiblePosts.length !== 1 ? 's' : ''}
                   {searchQuery && <span style={{ color: 'rgba(255,255,255,0.35)' }}> · "{searchQuery}"</span>}
                 </div>
-              </div>
+              </div>}
 
               <div className="page-content">
                 {isLoading ? (
@@ -150,7 +150,7 @@ export default function App() {
                       style={{ height: '100%' }}
                     >
                       {view === 'calendar'  && <SingleMonthCalendar posts={visiblePosts} onEditPost={handleEditPost} />}
-                      {view === 'analytics' && <AnalyticsDashboard posts={posts} onEditPost={handleEditPost} />}
+                      {view === 'analytics' && <AnalyticsDashboard posts={visiblePosts} onEditPost={handleEditPost} />}
                       {view === 'list'      && <ListView posts={visiblePosts} onDelete={handleDeletePost} onEdit={handleEditPost} />}
                       {view === 'settings'  && <Settings />}
                     </motion.div>

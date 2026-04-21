@@ -69,7 +69,7 @@ export default function ListView({ posts, onDelete, onEdit }) {
                     {post.status}
                   </div>
                   <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                    {post.date} · {post.time}
+                    {post.date}{post.time ? ` · ${post.time}` : ''}
                   </span>
                 </div>
 

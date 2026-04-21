@@ -16,7 +16,7 @@ export default function Header({ view, searchQuery, onSearch }) {
         </h1>
       </div>
       <div className="header-right">
-        <div style={{ position: 'relative' }}>
+        {view !== 'settings' && <div style={{ position: 'relative' }}>
           <Search size={13} style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.25)', pointerEvents: 'none' }} />
           <input
             type="text"
@@ -45,7 +45,7 @@ export default function Header({ view, searchQuery, onSearch }) {
               <X size={12} />
             </button>
           )}
-        </div>
+        </div>}
       </div>
     </header>
   )
