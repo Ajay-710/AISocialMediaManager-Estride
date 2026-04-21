@@ -1,69 +1,50 @@
-import { ChevronLeft, ChevronRight, Plus, Bell, Search } from 'lucide-react'
-import { PLATFORMS } from '../data/mockData'
+import { Search, X } from 'lucide-react'
 
 const VIEW_TITLES = {
-  calendar: 'Content Calendar',
-  list:     'Content List',
-  settings: 'Settings',
+  calendar:  'Content Calendar',
+  list:      'Content Archive',
+  analytics: 'Performance Report',
+  settings:  'Settings',
 }
 
-const MONTH_NAMES = [
-  'January','February','March','April','May','June',
-  'July','August','September','October','November','December',
-]
-
-function PlatformDot({ color }) {
+export default function Header({ view, searchQuery, onSearch }) {
   return (
-    <span
-      className="platform-filter-dot"
-      style={{ background: color }}
-    />
-  )
-}
-
-export default function Header({
-  view,
-  activePlatforms,
-  onTogglePlatform,
-  onCreatePost,
-  currentMonth,
-  setCurrentMonth,
-}) {
-  const changeMonth = (dir) => {
-    setCurrentMonth(prev => {
-      const d = new Date(prev)
-      d.setMonth(d.getMonth() + dir)
-      return d
-    })
-  }
-
-  return (
-    <header className="header" style={{ padding: '0 24px', height: '80px', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-      {/* Left */}
+    <header className="header" style={{ padding: '0 32px', height: '60px', borderBottom: '1px solid rgba(255,255,255,0.03)', flexShrink: 0 }}>
       <div className="header-left">
-        <h1 className="header-title" style={{ fontSize: '18px', fontWeight: '700', letterSpacing: '-0.02em' }}>
-          {VIEW_TITLES[view]}
+        <h1 style={{ fontSize: '15px', fontWeight: '700', letterSpacing: '-0.02em', color: 'white' }}>
+          {VIEW_TITLES[view] || view}
         </h1>
       </div>
-
-      {/* Right */}
       <div className="header-right">
-        <div style={{ position: 'relative', marginRight: '16px' }}>
-          <Search size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.4)' }} />
-          <input 
-            type="text" 
-            placeholder="Search workspace..." 
-            style={{ 
-              background: 'rgba(255,255,255,0.03)', 
-              border: '1px solid rgba(255,255,255,0.05)', 
-              borderRadius: '12px', 
-              padding: '10px 12px 10px 36px', 
-              width: '240px', 
-              fontSize: '13px',
+        <div style={{ position: 'relative' }}>
+          <Search size={13} style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.25)', pointerEvents: 'none' }} />
+          <input
+            type="text"
+            placeholder="Search content..."
+            value={searchQuery}
+            onChange={e => onSearch(e.target.value)}
+            style={{
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(255,255,255,0.05)',
+              borderRadius: '10px',
+              padding: '7px 32px 7px 32px',
+              width: '210px',
+              fontSize: '12px',
               color: 'white',
-              outline: 'none'
-            }} 
+              outline: 'none',
+              transition: 'border-color 0.2s',
+            }}
+            onFocus={e => e.target.style.borderColor = 'rgba(255,255,255,0.12)'}
+            onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.05)'}
           />
+          {searchQuery && (
+            <button
+              onClick={() => onSearch('')}
+              style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', opacity: 0.4, cursor: 'pointer', background: 'none', border: 'none', color: 'white', display: 'flex' }}
+            >
+              <X size={12} />
+            </button>
+          )}
         </div>
       </div>
     </header>

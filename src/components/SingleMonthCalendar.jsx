@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
-import { ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react'
-import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, isSameMonth, isSameDay, addDays, parseISO } from 'date-fns'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, isSameMonth, isSameDay, addDays } from 'date-fns'
 
 const PLATFORM_COLORS = {
   x: '#1D9BF0',
@@ -8,8 +8,8 @@ const PLATFORM_COLORS = {
   instagram: '#E1306C'
 }
 
-export const SingleMonthCalendar = ({ posts = [] }) => {
-  const [currentMonth, setCurrentMonth] = useState(new Date(2026, 3, 1)) // April 2026
+export const SingleMonthCalendar = ({ posts = [], onEditPost }) => {
+  const [currentMonth, setCurrentMonth] = useState(new Date())
 
   const renderHeader = () => (
     <div className="flex items-center justify-between mb-8 px-2">
@@ -66,7 +66,7 @@ export const SingleMonthCalendar = ({ posts = [] }) => {
         const cloneDay = day
         const dayPosts = posts.filter(p => p.date === format(cloneDay, 'yyyy-MM-dd'))
         const isCurrentMonth = isSameMonth(day, monthStart)
-        const isToday = isSameDay(day, new Date(2026, 3, 19)) // Mocked Today
+        const isToday = isSameDay(day, new Date())
 
         days.push(
           <div
@@ -97,13 +97,18 @@ export const SingleMonthCalendar = ({ posts = [] }) => {
 
             <div className="space-y-1.5 overflow-hidden">
               {dayPosts.slice(0, 3).map((post, idx) => (
-                <div 
-                  key={idx} 
+                <div
+                  key={idx}
+                  onClick={() => onEditPost?.(post)}
                   className="flex items-center gap-2 px-2 py-1.5 bg-white/5 border border-white/5 rounded-lg overflow-hidden whitespace-nowrap text-ellipsis"
+                  style={{ cursor: onEditPost ? 'pointer' : 'default', transition: 'background 0.15s' }}
+                  onMouseEnter={e => { if (onEditPost) e.currentTarget.style.background = 'rgba(255,255,255,0.08)' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '' }}
+                  title={post.content?.slice(0, 60)}
                 >
-                  <div 
-                    className="w-1.5 h-1.5 rounded-full shrink-0" 
-                    style={{ backgroundColor: PLATFORM_COLORS[post.platform] }} 
+                  <div
+                    className="w-1.5 h-1.5 rounded-full shrink-0"
+                    style={{ backgroundColor: PLATFORM_COLORS[post.platform] }}
                   />
                   <span className="text-[10px] font-bold text-white/70 uppercase truncate">
                     {post.platform}

@@ -307,6 +307,20 @@ body {
 }
 .fade-in { animation: fadeSlideIn 0.25s ease both; }
 
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 2px solid rgba(255,255,255,0.06);
+  border-top-color: rgba(255,255,255,0.35);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
 /* ── Empty state ─────────────────────────────────────────────────── */
 .empty-state {
   display: flex;
