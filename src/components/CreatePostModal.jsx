@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { X, Link, Sparkles, Send, FileText, Loader2 } from 'lucide-react'
+import { socialService } from '../lib/socials'
 
 const PLATFORMS = [
   { id: 'x',         label: 'X',         color: '#1D9BF0' },
@@ -16,24 +17,34 @@ export default function CreatePostModal({ onClose, onSave }) {
   const [scheduleDate, setScheduleDate]           = useState('2026-04-20')
   const [scheduleTime, setScheduleTime]           = useState('09:00')
   const [isGenerating, setIsGenerating]           = useState(false)
+  const [isPosting, setIsPosting]                 = useState(false)
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!content.trim()) return
-    
-    // Pick the first platform as the primary one for the chip
-    const primaryPlatform = Array.from(selectedPlatforms)[0]
-    
-    const newPost = {
-      id: Date.now(),
-      platform: primaryPlatform,
-      date: scheduleDate,
-      time: scheduleTime,
-      status: 'scheduled',
-      content: content,
-      engagement: null
+    setIsPosting(true)
+
+    try {
+      // 1. Post to Ayrshare (Real Socials)
+      await socialService.postToSocials(content, Array.from(selectedPlatforms));
+
+      // 2. Save to our database for the Calendar/List views
+      const primaryPlatform = Array.from(selectedPlatforms)[0]
+      const newPost = {
+        id: Date.now(),
+        platform: primaryPlatform,
+        date: scheduleDate,
+        time: scheduleTime,
+        status: 'scheduled',
+        content: content,
+        engagement: null
+      }
+      
+      onSave(newPost)
+    } catch (err) {
+      alert("Error posting to socials. Please check your Ayrshare key.")
+    } finally {
+      setIsPosting(false)
     }
-    
-    onSave(newPost)
   }
 
   const handleGenerate = async () => {
@@ -210,12 +221,12 @@ What's the biggest bottleneck in your team's workflow right now?`;
           <button className="btn-secondary" onClick={onClose} style={{ flex: 1 }}>Save Draft</button>
           <button 
             className="btn-primary" 
-            disabled={!content.trim()}
+            disabled={!content.trim() || isPosting}
             onClick={handleSave}
             style={{ flex: 2 }}
           >
-            <Send size={15} />
-            Schedule Post
+            {isPosting ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
+            {isPosting ? 'Sending to Socials...' : 'Schedule Post'}
           </button>
         </div>
       </div>

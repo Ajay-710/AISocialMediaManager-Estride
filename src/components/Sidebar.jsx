@@ -108,7 +108,14 @@ export default function Sidebar({ view, setView, onCreatePost }) {
         </button>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '0 12px' }}>
-          <ClerkUserSection />
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <ClerkUserSection />
+          </div>
+          <SignOutButton>
+            <button style={{ opacity: 0.4, cursor: 'pointer', display: 'flex', alignItems: 'center', transition: 'opacity 0.2s' }} className="hover:opacity-100">
+              <LogOut size={16} />
+            </button>
+          </SignOutButton>
         </div>
       </div>
     </aside>
