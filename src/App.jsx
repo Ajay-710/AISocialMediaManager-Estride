@@ -108,7 +108,7 @@ export default function App({ demoMode = false }) {
             {isLoading ? (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white/20 mb-4"></div>
-                <p className="text-gray-400 font-medium tracking-wide text-sm">Synchronizing Database...</p>
+                <p className="text-gray-400 font-medium tracking-wide text-sm">Synchronizing Cloud Core...</p>
               </div>
             ) : (
               <AnimatePresence mode="wait">

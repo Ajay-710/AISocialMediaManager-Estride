@@ -1,14 +1,11 @@
+import { supabase } from './supabase';
 import { mockPosts } from '../data/mockData';
 
-// API client to communicate with the SQLite Express backend
-const API_URL = '/api';
 const FALLBACK_KEY = 'estride_fallback_posts';
 
-// Helper to use LocalStorage fallback when Vercel backend isn't available
 const getFallbackStorage = () => {
   const saved = localStorage.getItem(FALLBACK_KEY);
-  if (saved) return JSON.parse(saved);
-  return mockPosts;
+  return saved ? JSON.parse(saved) : mockPosts;
 };
 
 const setFallbackStorage = (posts) => {
@@ -16,30 +13,42 @@ const setFallbackStorage = (posts) => {
 };
 
 export const storage = {
-  // Load posts asynchronously from the backend or fallback
+  // Load posts from Supabase or fallback
   loadPosts: async () => {
     try {
-      const res = await fetch(`${API_URL}/posts`);
-      if (!res.ok) throw new Error('Failed to fetch posts');
-      return await res.json();
+      const { data, error } = await supabase
+        .from('posts')
+        .select('*')
+        .order('date', { ascending: false });
+      
+      if (error) throw error;
+      if (!data || data.length === 0) return getFallbackStorage();
+      
+      return data.map(p => ({
+        ...p,
+        engagement: typeof p.engagement === 'string' ? JSON.parse(p.engagement) : p.engagement
+      }));
     } catch (e) {
-      console.warn('Backend completely absent, dropping to local fallback memory:', e);
+      console.warn('Supabase fetch failed, using fallback:', e);
       return getFallbackStorage();
     }
   },
 
-  // Add a single post
+  // Add a post to Supabase
   addPost: async (newPost) => {
     try {
-      const res = await fetch(`${API_URL}/posts`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newPost)
-      });
-      if (!res.ok) throw new Error('Failed to add post');
-      return await res.json();
+      const { data, error } = await supabase
+        .from('posts')
+        .insert([{
+          ...newPost,
+          engagement: JSON.stringify(newPost.engagement || {})
+        }])
+        .select();
+
+      if (error) throw error;
+      return data[0];
     } catch (e) {
-      console.warn('Backend absent, saving to fallback storage.');
+      console.warn('Supabase insert failed, using fallback:', e);
       const all = getFallbackStorage();
       const updated = [newPost, ...all];
       setFallbackStorage(updated);
@@ -47,16 +56,19 @@ export const storage = {
     }
   },
   
-  // Update a post
+  // Update a post in Supabase
   updatePost: async (id, updates) => {
     try {
-      const res = await fetch(`${API_URL}/posts/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates)
-      });
-      if (!res.ok) throw new Error('Failed to update post');
-      return await res.json();
+      const { error } = await supabase
+        .from('posts')
+        .update({
+          ...updates,
+          engagement: updates.engagement ? JSON.stringify(updates.engagement) : undefined
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+      return true;
     } catch (e) {
       const all = getFallbackStorage();
       const mapped = all.map(p => p.id === id ? { ...p, ...updates } : p);
@@ -65,12 +77,16 @@ export const storage = {
     }
   },
   
-  // Delete a post
+  // Delete a post from Supabase
   deletePost: async (id) => {
     try {
-      const res = await fetch(`${API_URL}/posts/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Failed to delete post');
-      return await res.json();
+      const { error } = await supabase
+        .from('posts')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      return true;
     } catch (e) {
       const all = getFallbackStorage();
       setFallbackStorage(all.filter(p => p.id !== id));

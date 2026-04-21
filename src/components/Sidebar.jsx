@@ -128,7 +128,7 @@ export default function Sidebar({ view, setView, onCreatePost, demoMode = false 
               <div className="sidebar-avatar">E</div>
               <div className="sidebar-user-info">
                 <div className="sidebar-user-name">Estride Admin</div>
-                <div className="sidebar-user-plan">Demo Mode · Local Persistence</div>
+                <div className="sidebar-user-plan">Supabase Live · Active Sync</div>
               </div>
             </>
           ) : (
