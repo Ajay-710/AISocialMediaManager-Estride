@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { SignedIn, SignedOut, SignIn } from '@clerk/clerk-react'
+import { SignedIn, SignedOut, SignIn, useUser } from '@clerk/clerk-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Sidebar from './components/Sidebar'
 import Header from './components/Header'
@@ -14,6 +14,7 @@ import { SingleMonthCalendar } from './components/SingleMonthCalendar'
 import AnalyticsDashboard from './components/AnalyticsDashboard'
 
 export default function App() {
+  const { user } = useUser()
   const [view, setView] = useState('calendar')
   const [posts, setPosts] = useState([])
   const [activePlatforms, setActivePlatforms] = useState(new Set(['x', 'linkedin', 'instagram']))
@@ -21,14 +22,16 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    storage.loadPosts().then(data => {
-      setPosts(data)
-      setIsLoading(false)
-    })
-  }, [])
+    if (user?.id) {
+      storage.loadPosts(user.id).then(data => {
+        setPosts(data)
+        setIsLoading(false)
+      })
+    }
+  }, [user?.id])
 
   const handleAddPost = async (newPost) => {
-    const added = await storage.addPost(newPost)
+    const added = await storage.addPost(newPost, user?.id)
     if (added) {
       setPosts(prev => [added, ...prev])
     }

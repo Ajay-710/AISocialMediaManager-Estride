@@ -13,41 +13,36 @@ const setFallbackStorage = (posts) => {
 };
 
 export const storage = {
-  // Load posts from Supabase or fallback
-  loadPosts: async () => {
-    if (!supabase) return getFallbackStorage();
+  // Load posts from Supabase only for the current user
+  loadPosts: async (userId) => {
+    if (!supabase || !userId) return getFallbackStorage();
     try {
       const { data, error } = await supabase
         .from('posts')
         .select('*')
+        .eq('user_id', userId)
         .order('date', { ascending: false });
       
       if (error) throw error;
-      if (!data || data.length === 0) return getFallbackStorage();
-      
       return data.map(p => ({
         ...p,
         engagement: typeof p.engagement === 'string' ? JSON.parse(p.engagement) : p.engagement
       }));
     } catch (e) {
-      console.warn('Supabase fetch failed, using fallback:', e);
+      console.warn('Supabase fetch failed:', e);
       return getFallbackStorage();
     }
   },
 
-  // Add a post to Supabase
-  addPost: async (newPost) => {
-    if (!supabase) {
-      const all = getFallbackStorage();
-      const updated = [newPost, ...all];
-      setFallbackStorage(updated);
-      return newPost;
-    }
+  // Add a post tied to the user
+  addPost: async (newPost, userId) => {
+    if (!supabase || !userId) return newPost;
     try {
       const { data, error } = await supabase
         .from('posts')
         .insert([{
           ...newPost,
+          user_id: userId,
           engagement: JSON.stringify(newPost.engagement || {})
         }])
         .select();
@@ -55,22 +50,13 @@ export const storage = {
       if (error) throw error;
       return data[0];
     } catch (e) {
-      console.warn('Supabase insert failed, using fallback:', e);
-      const all = getFallbackStorage();
-      const updated = [newPost, ...all];
-      setFallbackStorage(updated);
       return newPost;
     }
   },
   
-  // Update a post in Supabase
-  updatePost: async (id, updates) => {
-    if (!supabase) {
-      const all = getFallbackStorage();
-      const mapped = all.map(p => p.id === id ? { ...p, ...updates } : p);
-      setFallbackStorage(mapped);
-      return true;
-    }
+  // Update a post (securely filtered by userId)
+  updatePost: async (id, updates, userId) => {
+    if (!supabase || !userId) return true;
     try {
       const { error } = await supabase
         .from('posts')
@@ -78,36 +64,29 @@ export const storage = {
           ...updates,
           engagement: updates.engagement ? JSON.stringify(updates.engagement) : undefined
         })
-        .eq('id', id);
+        .eq('id', id)
+        .eq('user_id', userId);
 
       if (error) throw error;
       return true;
     } catch (e) {
-      const all = getFallbackStorage();
-      const mapped = all.map(p => p.id === id ? { ...p, ...updates } : p);
-      setFallbackStorage(mapped);
       return true;
     }
   },
   
-  // Delete a post from Supabase
-  deletePost: async (id) => {
-    if (!supabase) {
-      const all = getFallbackStorage();
-      setFallbackStorage(all.filter(p => p.id !== id));
-      return true;
-    }
+  // Delete a post (securely filtered by userId)
+  deletePost: async (id, userId) => {
+    if (!supabase || !userId) return true;
     try {
       const { error } = await supabase
         .from('posts')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('user_id', userId);
 
       if (error) throw error;
       return true;
     } catch (e) {
-      const all = getFallbackStorage();
-      setFallbackStorage(all.filter(p => p.id !== id));
       return true;
     }
   }
