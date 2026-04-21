@@ -69,60 +69,45 @@ export default function Sidebar({ view, setView, onCreatePost }) {
   return (
     <aside className="sidebar">
       {/* Brand */}
-      <div className="sidebar-brand" style={{ border: 'none', marginBottom: '30px' }}>
-        <div style={{ position: 'relative' }}>
-          <div style={{
-            position: 'absolute',
-            inset: -4,
-            background: 'linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05))',
-            borderRadius: '10px',
-            filter: 'blur(10px)',
-            opacity: 0.8
-          }} />
-          <img 
-            src="/logo.png" 
-            alt="Estride" 
-            style={{ 
-              width: '120px', 
-              display: 'block', 
-              position: 'relative',
-              filter: 'drop-shadow(0 0 10px rgba(255,255,255,0.1))'
-            }} 
-          />
+      <div style={{ marginBottom: '40px', paddingLeft: '16px' }}>
+        <div style={{ fontSize: '22px', fontWeight: '900', letterSpacing: '-0.04em', color: 'white' }}>
+          eSTRIDE<span style={{ color: 'rgba(255,255,255,0.3)' }}>.ai</span>
+        </div>
+        <div style={{ fontSize: '10px', fontWeight: '600', color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: '4px' }}>
+          Marketing Manager
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="sidebar-nav">
-        <div className="label-caps">Workspace</div>
+      <nav style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <div className="label-caps" style={{ paddingLeft: '16px' }}>Dashboard</div>
         {navItems.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
             className={`nav-item ${view === id ? 'active' : ''}`}
             onClick={() => setView(id)}
           >
-            <Icon size={16} className="nav-item-icon" />
+            <Icon size={18} />
             {label}
           </button>
         ))}
 
-        <CollapsibleSection title="Extra Options">
-          <button className="nav-item">
-            <Share2 size={16} className="nav-item-icon" /> Connect Socials
-          </button>
-          <button className="nav-item">
-            <Grid size={16} className="nav-item-icon" /> Integrations
-          </button>
-        </CollapsibleSection>
+        <div className="label-caps" style={{ paddingLeft: '16px', marginTop: '32px' }}>Growth</div>
+        <button className="nav-item">
+          <Share2 size={18} /> Connect Socials
+        </button>
+        <button className="nav-item">
+          <Grid size={18} /> AI Workflows
+        </button>
       </nav>
 
       {/* Bottom Profile and Actions */}
-      <div className="sidebar-bottom">
-        <button className="btn-primary" onClick={onCreatePost} style={{ width: '100%', marginBottom: '24px' }}>
-          <Plus size={16} /> Create Content
+      <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '24px', marginTop: 'auto' }}>
+        <button className="btn-primary" onClick={onCreatePost} style={{ width: '100%', marginBottom: '24px', boxShadow: '0 10px 30px rgba(255,255,255,0.05)' }}>
+          <Plus size={18} /> Create Content
         </button>
 
-        <div className="sidebar-user" style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '0 12px' }}>
           <ClerkUserSection />
         </div>
       </div>

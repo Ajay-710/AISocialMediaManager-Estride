@@ -108,154 +108,118 @@ What's the biggest bottleneck in your team's workflow right now?`;
 
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal">
+      <div className="modal-content">
         {/* Header */}
-        <div className="modal-header">
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px' }}>
           <div>
-            <div className="modal-title">Create New Post</div>
-            <div className="modal-subtitle">Write manually or generate with AI from a YouTube video</div>
+            <div style={{ fontSize: '20px', fontWeight: '800' }}>Create New Post</div>
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Write manually or generate with AI from a YouTube video</div>
           </div>
-          <button className="modal-close" onClick={onClose}>
-            <X size={16} />
+          <button onClick={onClose} style={{ opacity: 0.5 }}>
+            <X size={18} />
           </button>
         </div>
 
         {/* Body */}
-        <div className="modal-body">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
           {/* Platform picker */}
           <div>
-            <div className="modal-section-label">Publish to</div>
-            <div className="platform-picker">
-              {PLATFORMS.map(({ id, label, color }) => {
-                const isSelected = selectedPlatforms.has(id)
-                return (
-                  <button
-                    key={id}
-                    className={`platform-pick-btn ${isSelected ? `selected-${id}` : ''}`}
-                    onClick={() => togglePlatform(id)}
-                  >
-                    <span
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        width: 18,
-                        height: 18,
-                        borderRadius: 4,
-                        background: isSelected ? `${color}22` : 'rgba(255,255,255,0.04)',
-                        color: isSelected ? color : 'var(--text-muted)',
-                        fontSize: 9,
-                        fontWeight: 800,
-                        fontFamily: 'var(--font-display)',
-                      }}
-                    >
-                      {PLATFORM_LABELS[id]}
-                    </span>
-                    {label}
-                  </button>
-                )
-              })}
+            <div className="label-caps">Publish to</div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {PLATFORMS.map(({ id, label, color }) => (
+                <button
+                  key={id}
+                  onClick={() => togglePlatform(id)}
+                  style={{
+                    padding: '10px 16px',
+                    borderRadius: '10px',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    background: selectedPlatforms.has(id) ? 'rgba(255,255,255,0.08)' : 'transparent',
+                    border: `1px solid ${selectedPlatforms.has(id) ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.05)'}`,
+                    color: selectedPlatforms.has(id) ? 'white' : 'var(--text-muted)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: color }} />
+                  {label}
+                </button>
+              ))}
             </div>
           </div>
 
           {/* YouTube URL */}
           <div>
-            <div className="modal-section-label">AI Source (optional)</div>
-            <div className="source-input-wrap">
+            <div className="label-caps">AI Source (optional)</div>
+            <div style={{ position: 'relative' }}>
               <input
-                className="source-input"
+                className="settings-input"
                 type="url"
-                placeholder="Paste a YouTube URL to generate content with Claude…"
+                placeholder="Paste a YouTube URL to generate content…"
                 value={youtubeUrl}
                 onChange={e => setYoutubeUrl(e.target.value)}
+                style={{ paddingRight: '40px' }}
               />
-              <span className="source-input-icon">
-                <Link size={14} />
-              </span>
+              <Link size={14} style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', opacity: 0.3 }} />
             </div>
             <button
-              className="ai-generate-btn"
-              style={{ marginTop: 8 }}
+              className="btn-secondary"
+              style={{ marginTop: 10, width: '100%', justifyContent: 'center', display: 'flex', gap: '8px' }}
               disabled={!youtubeUrl || isGenerating}
               onClick={handleGenerate}
             >
               {isGenerating ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />}
-              {isGenerating ? 'Claude is thinking...' : 'Generate posts with Claude'}
-              <span style={{ marginLeft: 'auto', fontSize: 10, opacity: 0.6, fontWeight: 400 }}>
-                via n8n API
-              </span>
+              {isGenerating ? 'Analyzing Transcript...' : 'Generate with Claude'}
             </button>
-          </div>
-
-          {/* Divider */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            color: 'var(--text-muted)',
-            fontSize: 11,
-          }}>
-            <div style={{ flex: 1, height: 1, background: 'var(--border-subtle)' }} />
-            or write manually
-            <div style={{ flex: 1, height: 1, background: 'var(--border-subtle)' }} />
           </div>
 
           {/* Content */}
           <div>
-            <div className="modal-section-label">Post Content</div>
-            <div className="content-area">
+            <div className="label-caps">Post Content</div>
+            <div style={{ position: 'relative' }}>
               <textarea
-                className="content-textarea"
-                placeholder="What do you want to share? Hook first, substance second, CTA last…"
+                className="settings-textarea"
+                placeholder="What do you want to share?"
                 value={content}
                 onChange={e => setContent(e.target.value)}
               />
-              <span
-                className="char-count"
-                style={{ color: isOverLimit ? '#EF4444' : undefined }}
-              >
-                {remaining < 0 ? `${Math.abs(remaining)} over` : `${remaining} left`}
+              <span style={{ position: 'absolute', bottom: '12px', right: '12px', fontSize: '10px', opacity: 0.3 }}>
+                {remaining} left
               </span>
             </div>
           </div>
 
           {/* Schedule */}
-          <div>
-            <div className="modal-section-label">Schedule</div>
-            <div className="datetime-row">
-              <input
-                type="date"
-                className="datetime-input"
-                value={scheduleDate}
-                onChange={e => setScheduleDate(e.target.value)}
-              />
-              <input
-                type="time"
-                className="datetime-input"
-                value={scheduleTime}
-                onChange={e => setScheduleTime(e.target.value)}
-              />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div>
+              <div className="label-caps">Date</div>
+              <input type="date" className="settings-input" value={scheduleDate} onChange={e => setScheduleDate(e.target.value)} />
+            </div>
+            <div>
+              <div className="label-caps">Time</div>
+              <input type="time" className="settings-input" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)} />
             </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="modal-footer">
-          <button className="modal-btn-secondary" onClick={onClose}>
-            <FileText size={13} style={{ marginRight: 5 }} />
-            Save Draft
-          </button>
+        <div style={{ display: 'flex', gap: '12px', marginTop: '32px' }}>
+          <button className="btn-secondary" onClick={onClose} style={{ flex: 1 }}>Save Draft</button>
           <button 
-            className="modal-btn-primary" 
+            className="btn-primary" 
             disabled={!content.trim()}
             onClick={handleSave}
+            style={{ flex: 2 }}
           >
-            <Send size={13} />
+            <Send size={15} />
             Schedule Post
           </button>
         </div>
       </div>
     </div>
-  )
+  );
 }
+
