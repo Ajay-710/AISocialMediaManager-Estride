@@ -8,6 +8,7 @@ export default defineConfig({
   },
   optimizeDeps: {
     include: ['react', 'react-dom', 'framer-motion'],
+    exclude: ['better-sqlite3'],
   },
   server: {
     proxy: {

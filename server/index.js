@@ -1,95 +1,76 @@
-import express from 'express';
-import cors from 'cors';
-import Database from 'better-sqlite3';
+import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+// Load env vars before anything else reads process.env
+dotenv.config({ path: join(__dirname, '../.env.local') });
+
+import express from 'express';
+import cors from 'cors';
+import Database from 'better-sqlite3';
+import fs from 'fs';
+
 const skillsDir = join(__dirname, '../../skills');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Initialize SQLite database
+// ── SQLite (local dev fallback — Supabase is the production store) ──────────
 const db = new Database(join(__dirname, 'database.sqlite'));
-
-// Create posts table if it doesn't exist
 db.exec(`
   CREATE TABLE IF NOT EXISTS posts (
-    id TEXT PRIMARY KEY,
-    platform TEXT,
-    date TEXT,
-    time TEXT,
-    status TEXT,
-    content TEXT,
-    engagement TEXT
+    id TEXT PRIMARY KEY, platform TEXT, date TEXT, time TEXT,
+    status TEXT, content TEXT, engagement TEXT
   )
 `);
 
-// Mock data to seed if empty
-const mockPosts = [
-  { id: '1', platform: 'x', date: '2026-04-03', time: '09:15', status: 'published', content: 'Spent 3 hours this week building an AI content pipeline...\n\nHere is the exact stack I am using 🧵', engagement: JSON.stringify({ likes: 847, reposts: 203, replies: 64 }) },
-  { id: '2', platform: 'linkedin', date: '2026-04-05', time: '08:30', status: 'published', content: 'Algorithm does not reward consistency — it rewards relevance.\n\nLesson: frequency is a trap. Depth is the moat.', engagement: JSON.stringify({ likes: 1243, reposts: 89, replies: 156 }) }
-];
-
-const count = db.prepare('SELECT COUNT(*) as count FROM posts').get().count;
-if (count === 0) {
+const seedCount = db.prepare('SELECT COUNT(*) as count FROM posts').get().count;
+if (seedCount === 0) {
   const insert = db.prepare('INSERT INTO posts (id, platform, date, time, status, content, engagement) VALUES (@id, @platform, @date, @time, @status, @content, @engagement)');
-  mockPosts.forEach(post => insert.run(post));
+  [
+    { id: '1', platform: 'x',        date: '2026-04-03', time: '09:15', status: 'published', content: 'Spent 3 hours this week building an AI content pipeline… Here is the exact stack I am using 🧵', engagement: JSON.stringify({ likes: 847, reposts: 203, replies: 64 }) },
+    { id: '2', platform: 'linkedin', date: '2026-04-05', time: '08:30', status: 'published', content: 'Frequency is a trap. Depth is the moat.', engagement: JSON.stringify({ likes: 1243, reposts: 89, replies: 156 }) },
+  ].forEach(p => insert.run(p));
 }
 
-import dotenv from 'dotenv';
-dotenv.config({ path: join(__dirname, '../.env.local') });
-
-// API Routes
+// ── AI Generation ─────────────────────────────────────────────────────────────
 app.post('/api/generate', async (req, res) => {
   try {
     const { youtubeUrl, platforms } = req.body;
     let brandVoice = '';
     let repurposeSkill = '';
-    
-    // 1. Read Ryan Doser's Skill / SOP files
-    try {
-      brandVoice = fs.readFileSync(join(skillsDir, 'brand_voice_template.md'), 'utf-8');
-      repurposeSkill = fs.readFileSync(join(skillsDir, 'skill_repurpose_youtube.md'), 'utf-8');
-    } catch (fsErr) {
-      console.warn("Could not read skills directory:", fsErr);
-    }
 
-    // 2. Transmit to N8N Webhook with the fully assembled Context prompt
+    try {
+      brandVoice    = fs.readFileSync(join(skillsDir, 'brand_voice_template.md'),   'utf-8');
+      repurposeSkill = fs.readFileSync(join(skillsDir, 'skill_repurpose_youtube.md'), 'utf-8');
+    } catch { /* skills dir not readable, continue without */ }
+
     const webhookUrl = process.env.VITE_N8N_WEBHOOK_URL;
-    let n8nSuccess = false;
     let generatedContent = '';
+    let n8nSuccess = false;
 
     if (webhookUrl) {
       try {
-        const aiResponse = await fetch(webhookUrl, {
+        const aiRes = await fetch(webhookUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            youtubeUrl, 
-            platforms,
-            instructions: repurposeSkill,
-            brand_voice: brandVoice,
-            timestamp: new Date().toISOString()
-          }),
+          body: JSON.stringify({ youtubeUrl, platforms, instructions: repurposeSkill, brand_voice: brandVoice, timestamp: new Date().toISOString() }),
         });
-        if (aiResponse.ok) {
-          const data = await aiResponse.json();
-          generatedContent = data.content;
+        if (aiRes.ok) {
+          const d = await aiRes.json();
+          generatedContent = d.content;
           n8nSuccess = true;
         }
       } catch (err) {
-        console.error("N8N Webhook Failed:", err);
+        console.error('N8N webhook failed:', err.message);
       }
     }
 
-    // 3. Boss-Level Fallback (If N8N Webhook fails/expires, demonstrate the literal SOP!)
     if (!n8nSuccess) {
-      // Simulate Anthropic/Claude logic working through `skill_repurpose_youtube.md` rules
       generatedContent = `[X — Post 1: Hook]
 People think editing is the hardest part of YouTube. Wrong.
 The hardest part is distribution.
@@ -112,73 +93,118 @@ Stop doing manual data-entry. Your time is worth more.
 [LinkedIn — Post]
 I analyzed 500 viral videos this week.
 
-The one thing they had in common? A bulletproof distribution strategy. 
-Nobody scales by clicking "Copy Link" and posting it manually everywhere. You scale by treating your raw video like raw material, and your tools like automated assembly lines. 
+The one thing they had in common? A bulletproof distribution strategy.
+Nobody scales by clicking "Copy Link" and posting it manually everywhere.
+You scale by treating your raw video like raw material, and your tools like automated assembly lines.
 
-What's the biggest bottleneck in your team's workflow right now?
-`;
+What's the biggest bottleneck in your team's workflow right now?`;
     }
 
     res.json({ content: generatedContent });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
-app.get('/api/posts', (req, res) => {
+// ── Social Posting Proxy (keeps AYRSHARE_API_KEY server-side) ─────────────────
+app.post('/api/social/post', async (req, res) => {
+  const { content, platforms, profileKey } = req.body;
+  const apiKey = process.env.AYRSHARE_API_KEY;
+
+  if (!apiKey) {
+    console.warn('AYRSHARE_API_KEY not set — simulating post.');
+    return res.json({ status: 'success', simulated: true });
+  }
+
+  try {
+    const response = await fetch('https://api.ayrshare.com/api/post', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+        ...(profileKey && { 'Profile-Key': profileKey }),
+      },
+      body: JSON.stringify({
+        post: content,
+        platforms: platforms.map(p => p === 'x' ? 'twitter' : p),
+      }),
+    });
+    res.json(await response.json());
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Ayrshare OAuth Connect Link (multi-tenant profile flow) ───────────────────
+app.post('/api/social/connect', async (req, res) => {
+  const { profileKey: existingKey } = req.body;
+  const apiKey = process.env.AYRSHARE_API_KEY;
+
+  if (!apiKey) {
+    // No key configured — return Ayrshare's generic login page as a safe fallback
+    return res.json({ url: 'https://app.ayrshare.com', simulated: true, profileKey: null });
+  }
+
+  try {
+    // Step 1: reuse or create a profile for this user
+    let profileKey = existingKey;
+    if (!profileKey) {
+      const profileRes = await fetch('https://api.ayrshare.com/api/profiles/profile', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: `estride_user_${Date.now()}` }),
+      });
+      const profileData = await profileRes.json();
+      if (!profileRes.ok) throw new Error(profileData.message || 'Profile creation failed');
+      profileKey = profileData.profileKey;
+    }
+
+    // Step 2: generate the JWT-signed social connect URL
+    const jwtRes = await fetch('https://api.ayrshare.com/api/profiles/generateJWT', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ domain: 'app', profileKey }),
+    });
+    const jwtData = await jwtRes.json();
+    if (!jwtRes.ok) throw new Error(jwtData.message || 'JWT generation failed');
+
+    res.json({ url: jwtData.url, profileKey });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── SQLite CRUD (local dev, mirrors Supabase schema) ─────────────────────────
+app.get('/api/posts', (_req, res) => {
   try {
     const posts = db.prepare('SELECT * FROM posts ORDER BY date DESC, time DESC').all();
-    const mappedPosts = posts.map(p => ({
-      ...p,
-      engagement: p.engagement ? JSON.parse(p.engagement) : null
-    }));
-    res.json(mappedPosts);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+    res.json(posts.map(p => ({ ...p, engagement: p.engagement ? JSON.parse(p.engagement) : null })));
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 app.post('/api/posts', (req, res) => {
   try {
     const { platform, date, time, status, content } = req.body;
-    const newPost = {
-      id: Date.now().toString(),
-      platform,
-      date,
-      time,
-      status,
-      content,
-      engagement: null
-    };
-    
-    db.prepare('INSERT INTO posts (id, platform, date, time, status, content, engagement) VALUES (@id, @platform, @date, @time, @status, @content, @engagement)').run(newPost);
-    
-    res.status(201).json(newPost);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+    const post = { id: Date.now().toString(), platform, date, time, status, content, engagement: null };
+    db.prepare('INSERT INTO posts (id,platform,date,time,status,content,engagement) VALUES (@id,@platform,@date,@time,@status,@content,@engagement)').run(post);
+    res.status(201).json(post);
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 app.put('/api/posts/:id', (req, res) => {
   try {
     const { status, content } = req.body;
-    db.prepare('UPDATE posts SET status = @status, content = @content WHERE id = @id').run({ status, content, id: req.params.id });
+    db.prepare('UPDATE posts SET status=@status, content=@content WHERE id=@id').run({ status, content, id: req.params.id });
     res.json({ success: true });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 app.delete('/api/posts/:id', (req, res) => {
   try {
-    db.prepare('DELETE FROM posts WHERE id = @id').run({ id: req.params.id });
+    db.prepare('DELETE FROM posts WHERE id=@id').run({ id: req.params.id });
     res.json({ success: true });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 const PORT = 3001;
-app.listen(PORT, () => {
-  console.log(`Backend server running on http://localhost:${PORT}`);
-});
+app.listen(PORT, () => console.log(`Server → http://localhost:${PORT}`));

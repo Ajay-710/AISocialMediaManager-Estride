@@ -1,51 +1,40 @@
 /**
- * Ayrshare Social Media Service
- * Handles multi-platform posting for Estride Marketing OS
+ * Social media service — all Ayrshare calls proxy through Express
+ * (/api/social/*) so the API key never reaches the browser bundle.
+ *
+ * Server reads AYRSHARE_API_KEY (no VITE_ prefix) from .env.local.
+ * Add it to .env.local:  AYRSHARE_API_KEY=your_key_here
  */
-
-const AYRSHARE_API_KEY = import.meta.env.VITE_AYRSHARE_API_KEY;
 
 export const socialService = {
   /**
-   * Post content to selected platforms
-   * @param {string} postText - The content to share
-   * @param {string[]} platforms - Array of platform IDs (e.g., ['facebook', 'twitter', 'linkedin'])
+   * Post content to one or more platforms.
+   * @param {string} postText
+   * @param {string[]} platforms  e.g. ['x', 'linkedin', 'instagram']
+   * @param {string|null} profileKey  Ayrshare per-user profile key (multi-tenant)
    */
-  async postToSocials(postText, platforms) {
-    if (!AYRSHARE_API_KEY || AYRSHARE_API_KEY === 'your_ayrshare_key_here') {
-      console.warn("Ayrshare API Key missing. Simulating successful post.");
-      return { status: "success", simulated: true };
-    }
-
-    try {
-      const response = await fetch('https://api.ayrshare.com/api/post', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${AYRSHARE_API_KEY}`
-        },
-        body: JSON.stringify({
-          post: postText,
-          platforms: platforms.map(p => p === 'x' ? 'twitter' : p), // Ayrshare uses 'twitter' for X
-        })
-      });
-
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error("Social Posting Error:", error);
-      throw error;
-    }
+  async postToSocials(postText, platforms, profileKey = null) {
+    const res = await fetch('/api/social/post', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: postText, platforms, profileKey }),
+    });
+    if (!res.ok) throw new Error(`Server returned ${res.status}`);
+    return res.json();
   },
 
   /**
-   * Generate a Social Connection Link for the user (Multi-tenant)
-   * This is used for the "Connect Socials" button
+   * Get (or create) an Ayrshare social-connect link for this user.
+   * Returns { url: string, profileKey: string, simulated?: boolean }.
+   * @param {string|null} existingProfileKey  reuse the stored key if available
    */
-  async getProfileLink() {
-    // In a full multi-tenant app, we would pass a 'profileKey' here.
-    // For the free/pro tier start, we can just use the primary account.
-    console.log("Generating social login flow via Ayrshare...");
-    return "https://app.ayrshare.com/social";
-  }
+  async getConnectLink(existingProfileKey = null) {
+    const res = await fetch('/api/social/connect', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ profileKey: existingProfileKey }),
+    });
+    if (!res.ok) throw new Error(`Server returned ${res.status}`);
+    return res.json();
+  },
 };

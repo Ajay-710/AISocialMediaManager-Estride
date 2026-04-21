@@ -3,7 +3,6 @@ import { SignedIn, SignedOut, SignIn, useUser } from '@clerk/clerk-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Sidebar from './components/Sidebar'
 import Header from './components/Header'
-import CalendarView from './components/CalendarView'
 import ListView from './components/ListView'
 import Settings from './components/Settings'
 import CreatePostModal from './components/CreatePostModal'
@@ -32,10 +31,18 @@ export default function App() {
 
   const handleAddPost = async (newPost) => {
     const added = await storage.addPost(newPost, user?.id)
-    if (added) {
-      setPosts(prev => [added, ...prev])
-    }
+    if (added) setPosts(prev => [added, ...prev])
     setShowModal(false)
+  }
+
+  const handleDeletePost = async (postId) => {
+    // Optimistic: remove immediately, roll back on failure
+    setPosts(prev => prev.filter(p => p.id !== postId))
+    const ok = await storage.deletePost(postId, user?.id)
+    if (!ok) {
+      // Restore if delete failed (re-fetch to be safe)
+      storage.loadPosts(user?.id).then(setPosts)
+    }
   }
 
   const togglePlatform = (id) => {
@@ -135,9 +142,9 @@ export default function App() {
                           posts={visiblePosts}
                         />
                       )}
-                      {view === 'analytics' && <AnalyticsDashboard />}
+                      {view === 'analytics' && <AnalyticsDashboard posts={posts} />}
                       {view === 'list' && (
-                        <ListView posts={visiblePosts} />
+                        <ListView posts={visiblePosts} onDelete={handleDeletePost} />
                       )}
                       {view === 'settings' && <Settings />}
                     </motion.div>
