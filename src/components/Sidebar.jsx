@@ -2,63 +2,9 @@ import { useState } from 'react'
 import { Calendar, LayoutList, Settings, Plus, LogOut, Grid, ChevronDown, ChevronRight, Share2, BarChart3 } from 'lucide-react'
 import { UserButton, useUser, SignOutButton } from '@clerk/clerk-react'
 
-// Pure React/CSS Collapsible to maintain the exact aesthetic without Tailwind clashes
-const CollapsibleSection = ({ title, children }) => {
-  const [open, setOpen] = useState(false);
-  
-  return (
-    <div style={{ marginTop: '24px' }}>
-      <button 
-        className="sidebar-section-label" 
-        onClick={() => setOpen(!open)}
-        style={{ 
-          width: '100%', 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center', 
-          cursor: 'pointer', 
-          background: 'transparent', 
-          border: 'none',
-          paddingRight: '12px',
-          outline: 'none',
-        }}
-      >
-        {title}
-        {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-      </button>
-      <div style={{ 
-        overflow: 'hidden', 
-        transition: 'max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s', 
-        maxHeight: open ? '250px' : '0',
-        opacity: open ? 1 : 0
-      }}>
-        <div style={{ paddingTop: '6px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
-          {children}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const ClerkUserSection = () => {
-  const { user } = useUser();
-  return (
-    <>
-      <UserButton appearance={{ elements: { userButtonAvatarBox: { width: 30, height: 30 } } }} />
-      <div className="sidebar-user-info">
-        <div className="sidebar-user-name">{user?.fullName || "Guest User"}</div>
-        <div className="sidebar-user-plan">{user?.primaryEmailAddress?.emailAddress || "Pro · 13 posts scheduled"}</div>
-      </div>
-      <SignOutButton>
-        <button style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
-          <LogOut size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-        </button>
-      </SignOutButton>
-    </>
-  );
-};
 
 export default function Sidebar({ view, setView, onCreatePost }) {
+  const { user } = useUser()
   const navItems = [
     { id: 'calendar',  label: 'Calendar',      icon: Calendar },
     { id: 'analytics', label: 'Analytics',     icon: BarChart3 },
@@ -101,19 +47,54 @@ export default function Sidebar({ view, setView, onCreatePost }) {
         </button>
       </nav>
 
-      {/* Bottom Profile and Actions */}
-      <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '24px', marginTop: 'auto' }}>
-        <button className="btn-primary" onClick={onCreatePost} style={{ width: '100%', marginBottom: '24px', boxShadow: '0 10px 30px rgba(255,255,255,0.05)' }}>
+      {/* Bottom Profile Section (21st.dev Style) */}
+      <div style={{ marginTop: 'auto', paddingTop: '32px' }}>
+        <button className="btn-primary" onClick={onCreatePost} style={{ width: '100%', marginBottom: '24px' }}>
           <Plus size={18} /> Create Content
         </button>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '0 12px' }}>
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <ClerkUserSection />
+        <div style={{
+          background: 'rgba(255,255,255,0.02)',
+          border: '1px solid var(--border-glass)',
+          borderRadius: '16px',
+          padding: '12px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ flexShrink: 0 }}>
+              <UserButton appearance={{ elements: { userButtonAvatarBox: { width: 34, height: 34 } } }} />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: '13px', fontWeight: '700', color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {user?.fullName || "Ajay Pendem"}
+              </div>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {user?.primaryEmailAddress?.emailAddress || "pendemajay7@gmail.com"}
+              </div>
+            </div>
           </div>
+
           <SignOutButton>
-            <button style={{ opacity: 0.4, cursor: 'pointer', display: 'flex', alignItems: 'center', transition: 'opacity 0.2s' }} className="hover:opacity-100">
-              <LogOut size={16} />
+            <button style={{
+              width: '100%',
+              padding: '8px',
+              borderRadius: '8px',
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(255,255,255,0.05)',
+              color: 'var(--text-muted)',
+              fontSize: '12px',
+              fontWeight: '600',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }} className="hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/20">
+              <LogOut size={14} />
+              Sign Out
             </button>
           </SignOutButton>
         </div>
