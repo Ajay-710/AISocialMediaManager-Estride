@@ -40,9 +40,25 @@ const CollapsibleSection = ({ title, children }) => {
   );
 };
 
-export default function Sidebar({ view, setView, onCreatePost }) {
+const ClerkUserSection = () => {
   const { user } = useUser();
+  return (
+    <>
+      <UserButton appearance={{ elements: { userButtonAvatarBox: { width: 30, height: 30 } } }} />
+      <div className="sidebar-user-info">
+        <div className="sidebar-user-name">{user?.fullName || "Guest User"}</div>
+        <div className="sidebar-user-plan">{user?.primaryEmailAddress?.emailAddress || "Pro · 13 posts scheduled"}</div>
+      </div>
+      <SignOutButton>
+        <button style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+          <LogOut size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+        </button>
+      </SignOutButton>
+    </>
+  );
+};
 
+export default function Sidebar({ view, setView, onCreatePost, demoMode = false }) {
   const navItems = [
     { id: 'calendar',  label: 'Calendar',      icon: Calendar },
     { id: 'analytics', label: 'Analytics',     icon: BarChart3 },
@@ -107,16 +123,17 @@ export default function Sidebar({ view, setView, onCreatePost }) {
         </button>
 
         <div className="sidebar-user">
-          <UserButton appearance={{ elements: { userButtonAvatarBox: { width: 30, height: 30 } } }} />
-          <div className="sidebar-user-info">
-            <div className="sidebar-user-name">{user?.fullName || "Guest User"}</div>
-            <div className="sidebar-user-plan">{user?.primaryEmailAddress?.emailAddress || "Pro · 13 posts scheduled"}</div>
-          </div>
-          <SignOutButton>
-            <button style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
-              <LogOut size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-            </button>
-          </SignOutButton>
+          {demoMode ? (
+            <>
+              <div className="sidebar-avatar">E</div>
+              <div className="sidebar-user-info">
+                <div className="sidebar-user-name">Estride Admin</div>
+                <div className="sidebar-user-plan">Demo Mode · Local Persistence</div>
+              </div>
+            </>
+          ) : (
+            <ClerkUserSection />
+          )}
         </div>
       </div>
     </aside>

@@ -55,6 +55,7 @@ export default function App({ demoMode = false }) {
         view={view}
         setView={setView}
         onCreatePost={() => setShowModal(true)}
+        demoMode={demoMode}
       />
 
       <div className="main-content">
