@@ -1,215 +1,236 @@
-import React, { useState, useEffect } from 'react'
-import { TrendingUp, Users, MousePointer2, BarChart2, Zap, ArrowUpRight, ArrowDownRight } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { cn } from '../lib/utils'
+import React from 'react'
+import { motion } from 'framer-motion'
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts'
+import { Plus, Download, Filter, MoreHorizontal, ArrowUpRight, TrendingUp, Users, Zap, Globe } from 'lucide-react'
 
-const StatCard = ({ title, value, change, icon: Icon, trend, delay }) => (
-  <motion.div 
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ delay, duration: 0.5, ease: "easeOut" }}
-    whileHover={{ y: -4, scale: 1.02 }}
-    className="bg-[#0A0A0A] border border-white/10 rounded-2xl p-6 hover:bg-[#121212] hover:border-white/20 transition-all duration-300 relative overflow-hidden group"
-  >
-    <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-    
-    <div className="relative z-10 flex justify-between items-start mb-4">
-      <div className="p-2 rounded-xl bg-white/5 text-gray-300 border border-white/5 group-hover:bg-white/10 transition-colors">
-        <Icon size={18} />
-      </div>
-      <div className={cn(
-        "flex items-center text-xs font-semibold px-2 py-1 rounded-md bg-white/5 border border-white/5",
-        trend === 'up' ? "text-gray-200" : "text-gray-400"
-      )}>
-        {trend === 'up' ? <ArrowUpRight size={13} className="mr-1" /> : <ArrowDownRight size={13} className="mr-1" />}
-        {change}
-      </div>
-    </div>
-    <div className="relative z-10">
-      <div className="text-3xl font-extrabold text-white mb-1 tracking-tight" style={{ lineHeight: 1.2 }}>{value}</div>
-      <div className="text-xs text-gray-500 font-medium tracking-wide uppercase">{title}</div>
-    </div>
-  </motion.div>
+const DATA = [
+  { name: 'Jan', reach: 4000, eng: 2400 },
+  { name: 'Feb', reach: 3000, eng: 1398 },
+  { name: 'Mar', reach: 2000, eng: 9800 },
+  { name: 'Apr', reach: 2780, eng: 3908 },
+  { name: 'May', reach: 1890, eng: 4800 },
+  { name: 'Jun', reach: 2390, eng: 3800 },
+  { name: 'Jul', reach: 3490, eng: 4300 },
+]
+
+const PLATFORM_DATA = [
+  { name: 'X', value: 45, color: '#FFFFFF' },
+  { name: 'LinkedIn', value: 27, color: '#3B82F6' },
+  { name: 'Instagram', value: 18, color: '#E1306C' },
+  { name: 'Google', value: 10, color: '#71717A' },
+]
+
+const StatBadge = ({ value, trend }) => (
+  <div style={{
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '4px',
+    padding: '4px 10px',
+    borderRadius: '99px',
+    background: trend === 'up' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+    color: trend === 'up' ? '#10B981' : '#EF4444',
+    fontSize: '11px',
+    fontWeight: '700',
+    border: `1px solid ${trend === 'up' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)'}`
+  }}>
+    {trend === 'up' ? '+' : '-'}{value}
+  </div>
 )
 
 export default function AnalyticsDashboard() {
-  const [mounted, setMounted] = useState(false)
-  
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px', height: '100%' }}>
-      {/* Metrics Row */}
-      <motion.div 
-        initial={{ opacity: 0, filter: 'blur(5px)' }}
-        animate={{ opacity: 1, filter: 'blur(0px)' }}
-        transition={{ duration: 0.4 }}
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
-      >
-        <StatCard delay={0.1} title="Impressions" value="1.2M" change="+12.5%" icon={TrendingUp} trend="up" />
-        <StatCard delay={0.2} title="Followers" value="48.2K" change="+4.3%" icon={Users} trend="up" />
-        <StatCard delay={0.3} title="Clicks" value="24.1K" change="-2.1%" icon={MousePointer2} trend="down" />
-        <StatCard delay={0.4} title="Engagement" value="5.8%" change="+0.8%" icon={Zap} trend="up" />
-      </motion.div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px', color: 'white' }}>
+      
+      {/* Top Navigation / Breadcrumbs */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', fontSize: '12px', fontWeight: '600', marginBottom: '8px' }}>
+            <span>Workflows</span>
+            <span style={{ opacity: 0.3 }}>/</span>
+            <span style={{ color: 'white' }}>Analytics</span>
+          </div>
+          <h1 style={{ fontSize: '32px', fontWeight: '800', letterSpacing: '-0.04em' }}>Performance Report</h1>
+        </div>
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', marginRight: '10px' }}>
+            {['AJ', 'EK', 'MD'].map((initials, i) => (
+              <div key={i} style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                background: '#1A1A1A',
+                border: '2px solid #050505',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '10px',
+                fontWeight: '800',
+                marginLeft: i === 0 ? 0 : '-12px',
+                color: 'var(--text-muted)'
+              }}>
+                {initials}
+              </div>
+            ))}
+            <div style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '50%',
+              background: 'white',
+              color: 'black',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginLeft: '-12px',
+              border: '2px solid #050505'
+            }}>
+              <Plus size={14} />
+            </div>
+          </div>
+          <button className="btn-secondary" style={{ padding: '10px' }}><Download size={16} /></button>
+          <button className="btn-primary" style={{ padding: '10px 20px', borderRadius: '12px' }}>
+            <Plus size={16} /> New Report
+          </button>
+        </div>
+      </div>
 
-      {/* Main Bento Grid */}
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(3, 1fr)', 
-        gap: '32px', 
-        flex: 1, 
-        minHeight: '500px' 
-      }}>
-        {/* Performance Chart Placeholder */}
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.4, duration: 0.5 }}
-          style={{ 
-            gridColumn: 'span 2', 
-            background: '#0A0A0A', 
-            border: '1px solid rgba(255,255,255,0.1)', 
-            borderRadius: '24px', 
-            padding: '40px', 
-            position: 'relative',
-            overflow: 'hidden'
-          }}
-          className="group hover:border-white/20 transition-colors duration-500"
-        >
-          {/* Extremely subtle dot matrix background */}
-          <div className="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:24px_24px] opacity-[0.03] pointer-events-none" />
-
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', position: 'relative', zIndex: 10 }}>
+      {/* Hero Numbers Section */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '24px' }}>
+        
+        {/* Main Revenue Card */}
+        <div className="settings-section" style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div>
-              <h3 className="text-xl font-bold text-white tracking-tight" style={{ lineHeight: 1 }}>Engagement Velocity</h3>
-              <p className="text-sm text-gray-500 mt-2">Aggregate cross-platform metrics</p>
-            </div>
-            <select className="bg-transparent border border-white/10 rounded-lg px-4 py-2 text-xs font-semibold text-gray-300 outline-none cursor-pointer hover:bg-white/5 transition-colors">
-              <option>Last 7 Days</option>
-              <option>Last 30 Days</option>
-            </select>
-          </div>
-          
-          <div style={{ 
-            position: 'absolute', 
-            inset: '160px 40px 40px', 
-            display: 'flex', 
-            alignItems: 'flex-end', 
-            gap: '12px' 
-          }}>
-            <AnimatePresence>
-              {mounted && [40, 65, 45, 90, 55, 75, 60, 85, 45, 95, 70, 80].map((h, i) => (
-                <motion.div 
-                  key={i} 
-                  initial={{ height: 0 }}
-                  animate={{ height: `${h}%` }}
-                  transition={{ delay: 0.5 + (i * 0.04), type: 'spring', stiffness: 80 }}
-                  whileHover={{ scaleY: 1.05, transformOrigin: 'bottom', backgroundColor: '#ffffff' }}
-                  style={{ 
-                    flex: 1, 
-                    backgroundColor: 'rgba(255, 255, 255, 0.1)', 
-                    borderRadius: '8px 8px 0 0',
-                    cursor: 'crosshair',
-                    position: 'relative',
-                    transition: 'background-color 0.3s'
-                  }} 
-                  className="group/bar"
-                >
-                  <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-white text-black text-xs font-bold py-1 px-2 rounded opacity-0 group-hover/bar:opacity-100 shadow-md pointer-events-none transition-opacity">
-                    {h * 12}
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
-        </motion.div>
-
-        {/* Best Platform Sidebar */}
-        <motion.div 
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.6, duration: 0.5 }}
-          style={{ 
-            background: '#0A0A0A', 
-            border: '1px solid rgba(255,255,255,0.1)', 
-            borderRadius: '24px', 
-            padding: '40px', 
-            display: 'flex', 
-            flexDirection: 'column', 
-            justifyContent: 'space-between',
-            position: 'relative',
-            overflow: 'hidden'
-          }}
-          className="hover:border-white/20 transition-colors duration-500"
-        >
-          <div style={{ position: 'relative', zIndex: 10 }}>
-            <h3 className="text-xl font-bold text-white tracking-tight mb-2" style={{ lineHeight: 1 }}>Platform Rank</h3>
-            <p className="text-sm text-gray-500">Instagram drives the most value</p>
-          </div>
-          
-          <div className="space-y-4 my-10" style={{ position: 'relative', zIndex: 10 }}>
-            {/* Rank 1 */}
-            <div className="flex items-center justify-between group cursor-pointer hover:bg-white/5 p-4 rounded-xl border border-white/5 hover:border-white/10 transition-all">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-lg bg-white text-black flex items-center justify-center font-black text-xs">IG</div>
-                <div>
-                  <div className="text-sm font-bold text-white tracking-tight" style={{ lineHeight: 1.2 }}>Instagram</div>
-                  <div className="text-xs text-gray-500 mt-1 uppercase">12k New</div>
-                </div>
+              <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: '600', marginBottom: '8px' }}>Total Network Reach</div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
+                <span style={{ fontSize: '48px', fontWeight: '900', letterSpacing: '-0.05em' }}>1,284,976</span>
+                <StatBadge value="12.5%" trend="up" />
               </div>
-              <div className="text-lg font-bold text-white">62%</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>vs prev. 1.1M  Last 30 Days</div>
             </div>
-
-            {/* Rank 2 */}
-            <div className="flex items-center justify-between group cursor-pointer hover:bg-white/5 p-4 rounded-xl border border-transparent hover:border-white/10 transition-all">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-lg bg-white/5 text-gray-300 flex items-center justify-center font-black text-xs">IN</div>
-                <div>
-                  <div className="text-sm font-bold text-gray-300 tracking-tight" style={{ lineHeight: 1.2 }}>LinkedIn</div>
-                  <div className="text-xs text-gray-500 mt-1 uppercase">4.2k New</div>
-                </div>
+            
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <div style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', fontSize: '11px', fontWeight: '700', border: '1px solid var(--border-glass)' }}>
+                Timeframe: Sep 1 - Sep 30
               </div>
-              <div className="text-[15px] font-bold text-gray-300 group-hover:text-white">24%</div>
-            </div>
-
-            {/* Rank 3 */}
-            <div className="flex items-center justify-between group cursor-pointer hover:bg-white/5 p-4 rounded-xl border border-transparent hover:border-white/10 transition-all">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-lg bg-white/5 text-gray-500 flex items-center justify-center font-black text-xs">𝕏</div>
-                <div>
-                  <div className="text-sm font-bold text-gray-500 tracking-tight" style={{ lineHeight: 1.2 }}>X (Twitter)</div>
-                  <div className="text-xs text-gray-500 mt-1 uppercase">1.1k New</div>
-                </div>
-              </div>
-              <div className="text-[15px] font-bold text-gray-500 group-hover:text-white">14%</div>
+              <button className="btn-secondary" style={{ padding: '8px' }}><Filter size={14} /></button>
             </div>
           </div>
 
-          <motion.button 
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            style={{ 
-              width: '100%', 
-              padding: '16px', 
-              background: '#FFFFFF', 
-              color: '#000000', 
-              borderRadius: '12px', 
-              fontSize: '13px', 
-              fontWeight: 800, 
-              border: '1px solid #FFFFFF', 
-              cursor: 'pointer',
-              zIndex: 10,
-              position: 'relative',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em'
-            }}
-            className="hover:bg-transparent hover:text-white transition-colors duration-300"
-          >
-            Export Report
-          </motion.button>
-        </motion.div>
+          <div style={{ height: '300px', width: '100%', marginTop: '20px' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={DATA}>
+                <defs>
+                  <linearGradient id="colorReach" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#ffffff" stopOpacity={0.1}/>
+                    <stop offset="95%" stopColor="#ffffff" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                <XAxis 
+                  dataKey="name" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 11, fontWeight: 600 }} 
+                  dy={10}
+                />
+                <YAxis 
+                  hide={true}
+                />
+                <Tooltip 
+                  contentStyle={{ background: '#0A0A0A', border: '1px solid var(--border-glass)', borderRadius: '12px' }}
+                  itemStyle={{ color: 'white', fontSize: '12px', fontWeight: '700' }}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="reach" 
+                  stroke="#ffffff" 
+                  strokeWidth={3} 
+                  fillOpacity={1} 
+                  fill="url(#colorReach)" 
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Side Mini Metrics */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div className="settings-section" style={{ padding: '24px', flex: 1 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyCenter: 'center' }}>
+                <Users size={16} />
+              </div>
+              <MoreHorizontal size={14} style={{ opacity: 0.3 }} />
+            </div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600' }}>New Followers</div>
+            <div style={{ fontSize: '24px', fontWeight: '800', margin: '4px 0' }}>48,201</div>
+            <StatBadge value="4.3%" trend="up" />
+          </div>
+
+          <div className="settings-section" style={{ padding: '24px', flex: 1, background: 'white', color: 'black' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', justifyCenter: 'center' }}>
+                <Zap size={16} />
+              </div>
+              <ArrowUpRight size={14} style={{ opacity: 0.3 }} />
+            </div>
+            <div style={{ fontSize: '12px', color: 'rgba(0,0,0,0.5)', fontWeight: '600' }}>Engagement Rate</div>
+            <div style={{ fontSize: '24px', fontWeight: '900', margin: '4px 0' }}>8.42%</div>
+            <div style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', opacity: 0.4 }}>Top 1% of Niche</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Grid Breakdown */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
+        
+        {/* Platform Value Card */}
+        <div className="settings-section" style={{ padding: '24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px' }}>
+            <h3 style={{ fontSize: '15px', fontWeight: '700' }}>Platform Value</h3>
+            <Globe size={14} style={{ opacity: 0.3 }} />
+          </div>
+          <div style={{ height: '180px' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={PLATFORM_DATA} layout="vertical">
+                <XAxis type="number" hide />
+                <YAxis dataKey="name" type="category" hide />
+                <Tooltip cursor={{ fill: 'transparent' }} />
+                <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={24}>
+                  {PLATFORM_DATA.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} fillOpacity={0.8} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px' }}>
+            {PLATFORM_DATA.map(p => (
+              <div key={p.name} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                <span style={{ color: 'var(--text-muted)' }}>{p.name}</span>
+                <span style={{ fontWeight: '700' }}>{p.value}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Sales Dynamic Placeholder */}
+        <div className="settings-section" style={{ padding: '24px', gridColumn: 'span 2' }}>
+           <h3 style={{ fontSize: '15px', fontWeight: '700', marginBottom: '24px' }}>Growth Trajectory</h3>
+           <div style={{ height: '240px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+             <ResponsiveContainer width="100%" height="100%">
+               <AreaChart data={DATA}>
+                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 10 }} />
+                 <Tooltip />
+                 <Area type="stepAfter" dataKey="eng" stroke="#3B82F6" strokeWidth={2} fill="rgba(59, 130, 246, 0.05)" />
+                 <Area type="stepAfter" dataKey="reach" stroke="#ffffff" strokeWidth={2} fill="rgba(255, 255, 255, 0.05)" />
+               </AreaChart>
+             </ResponsiveContainer>
+           </div>
+        </div>
+
       </div>
     </div>
   )
