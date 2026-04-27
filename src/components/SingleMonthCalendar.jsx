@@ -6,6 +6,7 @@ import {
   startOfWeek, endOfWeek,
   isSameMonth, isSameDay, addDays,
 } from 'date-fns'
+import { FadeInStagger } from './GsapComponents'
 
 const PLATFORM_COLORS  = { x: '#E7E9EA', linkedin: '#60A5FA', instagram: '#E1306C' }
 const PLATFORM_LABELS  = { x: 'X', linkedin: 'in', instagram: 'IG' }
@@ -239,21 +240,23 @@ export const SingleMonthCalendar = ({ posts = [], onEditPost }) => {
       </div>
 
       {/* ── Grid ── */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2, overflow: 'auto' }}>
-        {weeks.map((week, wi) => (
-          <div key={wi} style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2, flex: 1 }}>
-            {week.map((day, di) => (
-              <DayCell
-                key={di}
-                day={day}
-                posts={posts}
-                monthStart={monthStart}
-                onEditPost={onEditPost}
-              />
-            ))}
-          </div>
-        ))}
-      </div>
+      <FadeInStagger staggerDelay={0.03}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2, overflow: 'auto' }}>
+          {weeks.map((week, wi) => (
+            <div key={wi} style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2, flex: 1 }}>
+              {week.map((day, di) => (
+                <DayCell
+                  key={di}
+                  day={day}
+                  posts={posts}
+                  monthStart={monthStart}
+                  onEditPost={onEditPost}
+                />
+              ))}
+            </div>
+          ))}
+        </div>
+      </FadeInStagger>
 
     </div>
   )

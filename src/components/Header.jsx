@@ -1,10 +1,12 @@
 import { Search, X } from 'lucide-react'
+import { GsapTitle } from './GsapComponents'
 
 const VIEW_TITLES = {
   calendar:  'Content Calendar',
   list:      'Content Archive',
   analytics: 'Performance Report',
   settings:  'Settings',
+  workflows: 'AI Workflows',
 }
 
 export default function Header({ view, searchQuery, onSearch }) {
@@ -12,7 +14,7 @@ export default function Header({ view, searchQuery, onSearch }) {
     <header className="header" style={{ padding: '0 32px', height: '60px', borderBottom: '1px solid rgba(255,255,255,0.03)', flexShrink: 0 }}>
       <div className="header-left">
         <h1 style={{ fontSize: '15px', fontWeight: '700', letterSpacing: '-0.02em', color: 'white' }}>
-          {VIEW_TITLES[view] || view}
+          <GsapTitle text={VIEW_TITLES[view] || view} />
         </h1>
       </div>
       <div className="header-right">

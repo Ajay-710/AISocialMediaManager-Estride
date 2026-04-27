@@ -94,8 +94,8 @@ export default function App() {
             />
 
             <div className="page-container">
-              {/* Platform filter bar — hidden on Settings */}
-              {view !== 'settings' && <div style={{
+              {/* Platform filter bar — hidden on Settings & Workflows */}
+              {view !== 'settings' && view !== 'workflows' && <div style={{
                 padding: '12px 40px',
                 borderBottom: '1px solid rgba(255,255,255,0.03)',
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -153,6 +153,15 @@ export default function App() {
                       {view === 'analytics' && <AnalyticsDashboard posts={visiblePosts} onEditPost={handleEditPost} />}
                       {view === 'list'      && <ListView posts={visiblePosts} onDelete={handleDeletePost} onEdit={handleEditPost} />}
                       {view === 'settings'  && <Settings />}
+                      {view === 'workflows' && (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', textAlign: 'center' }}>
+                          <div style={{ width: 48, height: 48, borderRadius: 16, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 6h16M4 12h16M4 18h16" opacity="0.4" /><path d="M14 4l-4 16" /></svg>
+                          </div>
+                          <div style={{ fontSize: 16, fontWeight: 800, color: 'white', marginBottom: 6 }}>Custom Workflows</div>
+                          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', maxWidth: 280 }}>Connect webhooks from external tools to fully automate pipeline creation here soon.</div>
+                        </div>
+                      )}
                     </motion.div>
                   </AnimatePresence>
                 )}

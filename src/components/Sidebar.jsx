@@ -1,5 +1,6 @@
 import { Calendar, LayoutList, Settings, Plus, LogOut, Share2, BarChart3, Cpu } from 'lucide-react'
 import { UserButton, useUser, SignOutButton } from '@clerk/clerk-react'
+import { FadeInStagger, MagneticWrapper } from './GsapComponents'
 
 export default function Sidebar({ view, setView, onCreatePost, postCount = 0 }) {
   const { user } = useUser()
@@ -25,33 +26,37 @@ export default function Sidebar({ view, setView, onCreatePost, postCount = 0 }) 
 
       <nav style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         <div className="label-caps" style={{ paddingLeft: '16px' }}>Workspace</div>
-        {navItems.map(({ id, label, icon: Icon }) => (
-          <button key={id} className={`nav-item ${view === id ? 'active' : ''}`} onClick={() => setView(id)}>
-            <Icon size={16} />
-            <span style={{ flex: 1 }}>{label}</span>
-            {id === 'list' && postCount > 0 && (
-              <span style={{ fontSize: '10px', fontWeight: '700', background: 'rgba(255,255,255,0.06)', padding: '2px 7px', borderRadius: '99px', color: 'rgba(255,255,255,0.35)' }}>
-                {postCount}
-              </span>
-            )}
-          </button>
-        ))}
+        <FadeInStagger staggerDelay={0.06}>
+          {navItems.map(({ id, label, icon: Icon }) => (
+            <button key={id} className={`nav-item ${view === id ? 'active' : ''}`} onClick={() => setView(id)}>
+              <Icon size={16} />
+              <span style={{ flex: 1 }}>{label}</span>
+              {id === 'list' && postCount > 0 && (
+                <span style={{ fontSize: '10px', fontWeight: '700', background: 'rgba(255,255,255,0.06)', padding: '2px 7px', borderRadius: '99px', color: 'rgba(255,255,255,0.35)' }}>
+                  {postCount}
+                </span>
+              )}
+            </button>
+          ))}
+        </FadeInStagger>
 
         <div className="label-caps" style={{ paddingLeft: '16px', marginTop: '28px' }}>Tools</div>
         <button className="nav-item" onClick={() => setView('settings')}>
           <Share2 size={16} />
           <span>Connect Socials</span>
         </button>
-        <button className="nav-item" onClick={onCreatePost}>
+        <button className="nav-item" onClick={() => setView('workflows')}>
           <Cpu size={16} />
           <span>AI Workflows</span>
         </button>
       </nav>
 
       <div style={{ marginTop: 'auto', paddingTop: '20px' }}>
-        <button className="btn-primary" onClick={onCreatePost} style={{ width: '100%', marginBottom: '16px', fontSize: '13px', padding: '11px 20px' }}>
-          <Plus size={15} /> Create Content
-        </button>
+        <MagneticWrapper>
+          <button className="btn-primary" onClick={onCreatePost} style={{ width: '100%', marginBottom: '16px', fontSize: '13px', padding: '11px 20px', cursor: 'pointer' }}>
+            <Plus size={15} /> Create Content
+          </button>
+        </MagneticWrapper>
 
         <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-glass)', borderRadius: '14px', padding: '11px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
