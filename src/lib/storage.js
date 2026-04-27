@@ -82,7 +82,7 @@ export const storage = {
         .from('brand_voice')
         .select('*')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
       if (error && error.code !== 'PGRST116') throw error;
       return data || null;
     } catch (e) {
@@ -118,7 +118,7 @@ export const storage = {
         .from('profiles')
         .select('*')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
       if (error && error.code !== 'PGRST116') throw error;
       return data || null;
     } catch (e) {
