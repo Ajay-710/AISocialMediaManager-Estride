@@ -1,0 +1,1482 @@
+﻿diff --git a/package-lock.json b/package-lock.json
+index d23c464..873e6f3 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -8,6 +8,7 @@
+       "name": "ai-marketing-os",
+       "version": "0.1.0",
+       "dependencies": {
++        "@anthropic-ai/sdk": "^0.52.0",
+         "@clerk/clerk-react": "^5.61.5",
+         "@supabase/supabase-js": "^2.104.0",
+         "@tailwindcss/postcss": "^4.2.2",
+@@ -26,7 +27,8 @@
+         "react-dom": "^18.3.1",
+         "recharts": "^3.8.1",
+         "tailwind-merge": "^3.5.0",
+-        "tailwindcss": "^4.2.2"
++        "tailwindcss": "^4.2.2",
++        "youtube-transcript": "^1.3.0"
+       },
+       "devDependencies": {
+         "@vitejs/plugin-react": "^4.3.0",
+@@ -45,6 +47,15 @@
+         "url": "https://github.com/sponsors/sindresorhus"
+       }
+     },
++    "node_modules/@anthropic-ai/sdk": {
++      "version": "0.52.0",
++      "resolved": "https://registry.npmjs.org/@anthropic-ai/sdk/-/sdk-0.52.0.tgz",
++      "integrity": "sha512-d4c+fg+xy9e46c8+YnrrgIQR45CZlAi7PwdzIfDXDM6ACxEZli1/fxhURsq30ZpMZy6LvSkr41jGq5aF5TD7rQ==",
++      "license": "MIT",
++      "bin": {
++        "anthropic-ai-sdk": "bin/cli"
++      }
++    },
+     "node_modules/@babel/code-frame": {
+       "version": "7.29.0",
+       "resolved": "https://registry.npmjs.org/@babel/code-frame/-/code-frame-7.29.0.tgz",
+@@ -4549,6 +4560,15 @@
+       "engines": {
+         "node": ">=12"
+       }
++    },
++    "node_modules/youtube-transcript": {
++      "version": "1.3.0",
++      "resolved": "https://registry.npmjs.org/youtube-transcript/-/youtube-transcript-1.3.0.tgz",
++      "integrity": "sha512-laWv9RcKIWh6rZUH3hVnOngEvtKAhFMV5UepUO6AgevPYqe2zv8KW/uCkZJDSnPwf5/AdVu0Q66/1RDblKsp6Q==",
++      "license": "MIT",
++      "engines": {
++        "node": ">=18.0.0"
++      }
+     }
+   }
+ }
+diff --git a/package.json b/package.json
+index d5bbb79..78ca655 100644
+--- a/package.json
++++ b/package.json
+@@ -9,6 +9,7 @@
+     "preview": "vite preview"
+   },
+   "dependencies": {
++    "@anthropic-ai/sdk": "^0.52.0",
+     "@clerk/clerk-react": "^5.61.5",
+     "@supabase/supabase-js": "^2.104.0",
+     "@tailwindcss/postcss": "^4.2.2",
+@@ -27,7 +28,8 @@
+     "react-dom": "^18.3.1",
+     "recharts": "^3.8.1",
+     "tailwind-merge": "^3.5.0",
+-    "tailwindcss": "^4.2.2"
++    "tailwindcss": "^4.2.2",
++    "youtube-transcript": "^1.3.0"
+   },
+   "devDependencies": {
+     "@vitejs/plugin-react": "^4.3.0",
+diff --git a/server/index.js b/server/index.js
+index ed6fc04..7da7336 100644
+--- a/server/index.js
++++ b/server/index.js
+@@ -37,71 +37,274 @@ if (seedCount === 0) {
+   ].forEach(p => insert.run(p));
+ }
+ 
+-// ΓöÇΓöÇ AI Generation ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+-app.post('/api/generate', async (req, res) => {
++// ΓöÇΓöÇ Skill helpers ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++
++function loadSkills() {
++  let brandVoice = '';
++  let repurposeSkill = '';
+   try {
+-    const { youtubeUrl, platforms } = req.body;
+-    let brandVoice = '';
+-    let repurposeSkill = '';
+-
+-    try {
+-      brandVoice    = fs.readFileSync(join(skillsDir, 'brand_voice_template.md'),   'utf-8');
+-      repurposeSkill = fs.readFileSync(join(skillsDir, 'skill_repurpose_youtube.md'), 'utf-8');
+-    } catch { /* skills dir not readable, continue without */ }
+-
+-    const webhookUrl = process.env.VITE_N8N_WEBHOOK_URL;
+-    let generatedContent = '';
+-    let n8nSuccess = false;
+-
+-    if (webhookUrl) {
+-      try {
+-        const aiRes = await fetch(webhookUrl, {
+-          method: 'POST',
+-          headers: { 'Content-Type': 'application/json' },
+-          body: JSON.stringify({ youtubeUrl, platforms, instructions: repurposeSkill, brand_voice: brandVoice, timestamp: new Date().toISOString() }),
+-        });
+-        if (aiRes.ok) {
+-          const d = await aiRes.json();
+-          generatedContent = d.content;
+-          n8nSuccess = true;
+-        }
+-      } catch (err) {
+-        console.error('N8N webhook failed:', err.message);
+-      }
+-    }
++    brandVoice     = fs.readFileSync(join(skillsDir, 'brand_voice_template.md'),    'utf-8');
++    repurposeSkill = fs.readFileSync(join(skillsDir, 'skill_repurpose_youtube.md'), 'utf-8');
++  } catch (err) {
++    console.warn('[skills] Could not load skill files:', err.message);
++  }
++  return { brandVoice, repurposeSkill };
++}
++
++async function fetchYouTubeTranscript(videoUrl) {
++  try {
++    const { YoutubeTranscript } = await import('youtube-transcript');
++    const items = await YoutubeTranscript.fetchTranscript(videoUrl);
++    return items.map(i => i.text).join(' ');
++  } catch (err) {
++    console.warn('[transcript] Fetch failed:', err.message);
++    return null;
++  }
++}
++
++// Builds the Claude system prompt directly from the skill SOP + brand voice file.
++function buildYouTubeSystemPrompt(repurposeSkill, brandVoice) {
++  return [
++    'You are an expert social media content strategist executing a strict skill protocol.',
++    '',
++    repurposeSkill,
++    '',
++    brandVoice
++      ? `## Brand Voice Reference\n\n${brandVoice}`
++      : '## Brand Voice\nTone: Direct, bold, data-driven. No fluff. No corporate buzzwords.\nAudience: Startup founders, B2B marketers, solopreneurs.',
++    '',
++    'IMPORTANT: Follow the Step-by-Step SOP above exactly. Return all posts in the exact output format specified in Step 5.',
++  ].join('\n');
++}
++
++function buildYouTubeUserMessage(videoUrl, transcript, platforms) {
++  const platformList = (platforms || ['x']).join(', ');
++  if (transcript && transcript.length > 100) {
++    return [
++      `Repurpose the following YouTube video for: ${platformList}`,
++      '',
++      `Video URL: ${videoUrl}`,
++      '',
++      '## Transcript',
++      transcript,
++    ].join('\n');
++  }
++  // Transcript unavailable ΓÇö Claude should still produce quality posts based on URL context
++  return [
++    `Repurpose this YouTube video for: ${platformList}`,
++    '',
++    `Video URL: ${videoUrl}`,
++    '',
++    'No transcript was available. Generate high-quality posts following the SOP output format, ',
++    'using the video URL as context. Make reasonable inferences about the content type and topic.',
++  ].join('\n');
++}
+ 
+-    if (!n8nSuccess) {
+-      generatedContent = `[X ΓÇö Post 1: Hook]
++function buildTopicSystemPrompt(brandVoice) {
++  const voice = brandVoice && brandVoice.length > 200
++    ? brandVoice
++    : 'Tone: Direct, bold, data-driven. No fluff. Audience: Startup founders, B2B marketers.';
++  return [
++    'You are an expert social media content strategist writing platform-native posts.',
++    '',
++    '## Brand Voice',
++    voice,
++    '',
++    '## Output Format',
++    'Return posts in this exact format:',
++    '',
++    '---',
++    '',
++    '**[X ΓÇö Post 1: Hook]**',
++    '[post text]',
++    '',
++    '---',
++    '',
++    '**[X ΓÇö Post 2: Tactical]**',
++    '[post text]',
++    '',
++    '---',
++    '',
++    '**[X ΓÇö Post 3: Quote/Stat]**',
++    '[post text]',
++    '',
++    '---',
++    '',
++    '**[LinkedIn ΓÇö Post]**',
++    '[post text]',
++    '',
++    '---',
++    '',
++    'Rules:',
++    '- X posts: under 280 chars. Punchy, no hashtags unless essential.',
++    '- LinkedIn: 150ΓÇô300 words, hook opener, narrative body, close with a discussion question.',
++    '- No fabricated statistics.',
++    '- No restricted words from the brand voice file.',
++  ].join('\n');
++}
++
++async function callClaude(systemPrompt, userMessage) {
++  const apiKey = process.env.ANTHROPIC_API_KEY;
++  if (!apiKey) return null;
++  try {
++    const { default: Anthropic } = await import('@anthropic-ai/sdk');
++    const client  = new Anthropic({ apiKey });
++    const message = await client.messages.create({
++      model:      'claude-sonnet-4-6',
++      max_tokens: 2048,
++      system:     systemPrompt,
++      messages:   [{ role: 'user', content: userMessage }],
++    });
++    console.log('[claude] Generated successfully');
++    return message.content[0]?.text ?? null;
++  } catch (err) {
++    console.error('[claude] API error:', err.message);
++    return null;
++  }
++}
++
++async function callN8N(payload) {
++  const webhookUrl = process.env.VITE_N8N_WEBHOOK_URL;
++  if (!webhookUrl) return null;
++  try {
++    const res = await fetch(webhookUrl, {
++      method:  'POST',
++      headers: { 'Content-Type': 'application/json' },
++      body:    JSON.stringify(payload),
++    });
++    if (!res.ok) throw new Error(`N8N returned ${res.status}`);
++    const data = await res.json();
++    console.log('[n8n] Generated successfully');
++    return data.content ?? null;
++  } catch (err) {
++    console.error('[n8n] Webhook error:', err.message);
++    return null;
++  }
++}
++
++const YOUTUBE_FALLBACK = `**[X ΓÇö Post 1: Hook]**
+ People think editing is the hardest part of YouTube. Wrong.
++
+ The hardest part is distribution.
+-I just built a system that turns 1 video into 3 weeks of pipeline. ≡ƒº╡≡ƒæç
++
++I just built a system that turns 1 video into 3 weeks of content. ≡ƒº╡
++
++---
++
++**[X ΓÇö Post 2: Tactical]**
++My exact repurposing stack:
++
++1. Record once
++2. Transcript ΓåÆ AI extracts key ideas
++3. Generate 3 X posts + 1 LinkedIn post
++4. Schedule across all platforms
++
++One video. Three weeks of pipeline.
++
++---
++
++**[X ΓÇö Post 3: Quote/Stat]**
++"Your product is a commodity. Your audience is the moat."
++
++Distribution is the only unfair advantage left. Build the system.
+ 
+ ---
+ 
+-[X ΓÇö Post 2: Tactical]
+-My exact 4-step Ryan Doser repurposing framework:
++**[LinkedIn ΓÇö Post]**
++I analyzed what separates creators who plateau from those who scale.
++
++It's not talent. It's not consistency. It's distribution infrastructure.
++
++The best creators treat one long-form video as raw material ΓÇö not a finished product. They extract, repurpose, and schedule systematically, not manually.
++
++The result? 5├ù the output with 20% of the effort.
++
++What's the biggest bottleneck in your current content workflow?`;
+ 
+-1. Ingest via Blotato
+-2. Inject Brand Voice constraints
+-3. Generate distinct angle hooks
+-4. Automate publishing
++function buildTopicFallback(topic) {
++  return `**[X ΓÇö Post 1: Hook]**
++${topic ? `On ${topic}:\n\n` : ''}The counterintuitive truth nobody shares:
+ 
+-Stop doing manual data-entry. Your time is worth more.
++Consistency beats talent. Every time.
+ 
+ ---
+ 
+-[LinkedIn ΓÇö Post]
+-I analyzed 500 viral videos this week.
++**[X ΓÇö Post 2: Tactical]**
++3 things that actually move the needle${topic ? ` on ${topic}` : ''}:
++
++1. Show up before you feel ready
++2. Prioritise depth over frequency
++3. Study your misses ΓÇö not your hits
++
++---
++
++**[X ΓÇö Post 3: Quote/Stat]**
++"The market is always right. Your taste is irrelevant."
++
++Build what resonates, not what you think should resonate.
++
++---
++
++**[LinkedIn ΓÇö Post]**
++${topic ? `Here's what six months of working on ${topic} taught me:\n\n` : ''}The biggest mistake I see? Optimising for impressions instead of trust.
++
++Impressions are rented attention. Trust is owned distribution.
++
++When I switched my goal from "go viral" to "be the most useful person in the room," everything changed ΓÇö quality went up, engagement went up, and ironically, reach went up too.
++
++What metric do you wish you'd focused on earlier?`;
++}
++
++// ΓöÇΓöÇ AI Generation ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++app.post('/api/generate', async (req, res) => {
++  try {
++    const { youtubeUrl, topic, platforms = ['x'] } = req.body;
++    const { brandVoice, repurposeSkill } = loadSkills();
++
++    let content = null;
++
++    if (youtubeUrl) {
++      // ΓöÇΓöÇ YouTube repurpose flow ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++      console.log('[generate] YouTube mode:', youtubeUrl);
++      const transcript  = await fetchYouTubeTranscript(youtubeUrl);
++      const systemPrompt = buildYouTubeSystemPrompt(repurposeSkill, brandVoice);
++      const userMessage  = buildYouTubeUserMessage(youtubeUrl, transcript, platforms);
++
++      content = await callClaude(systemPrompt, userMessage);
++
++      if (!content) {
++        content = await callN8N({
++          mode: 'youtube', youtubeUrl, transcript, platforms,
++          systemPrompt, userMessage,
++        });
++      }
++
++      if (!content) content = YOUTUBE_FALLBACK;
++
++    } else if (topic) {
++      // ΓöÇΓöÇ Topic generation flow ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++      console.log('[generate] Topic mode:', topic);
++      const systemPrompt = buildTopicSystemPrompt(brandVoice);
++      const userMessage  = `Write social posts about this topic for ${platforms.join(', ')}:\n\n${topic}`;
++
++      content = await callClaude(systemPrompt, userMessage);
++
++      if (!content) {
++        content = await callN8N({
++          mode: 'topic', topic, platforms,
++          systemPrompt, userMessage,
++        });
++      }
+ 
+-The one thing they had in common? A bulletproof distribution strategy.
+-Nobody scales by clicking "Copy Link" and posting it manually everywhere.
+-You scale by treating your raw video like raw material, and your tools like automated assembly lines.
++      if (!content) content = buildTopicFallback(topic);
+ 
+-What's the biggest bottleneck in your team's workflow right now?`;
++    } else {
++      return res.status(400).json({ error: 'Provide either youtubeUrl or topic.' });
+     }
+ 
+-    res.json({ content: generatedContent });
++    res.json({ content });
+   } catch (err) {
++    console.error('[generate] Unhandled error:', err.message);
+     res.status(500).json({ error: err.message });
+   }
+ });
+diff --git a/src/App.jsx b/src/App.jsx
+index e3e9eb5..bb5e4d5 100644
+--- a/src/App.jsx
++++ b/src/App.jsx
+@@ -72,7 +72,7 @@ export default function App() {
+   return (
+     <>
+       <SignedOut>
+-        <div style={{ minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: 'var(--bg-base)' }}>
++        <div style={{ minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: 'var(--bg-deep)' }}>
+           <SignIn routing="hash" />
+         </div>
+       </SignedOut>
+@@ -94,8 +94,8 @@ export default function App() {
+             />
+ 
+             <div className="page-container">
+-              {/* Platform filter bar */}
+-              <div style={{
++              {/* Platform filter bar ΓÇö hidden on Settings */}
++              {view !== 'settings' && <div style={{
+                 padding: '12px 40px',
+                 borderBottom: '1px solid rgba(255,255,255,0.03)',
+                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+@@ -131,7 +131,7 @@ export default function App() {
+                   {visiblePosts.length} post{visiblePosts.length !== 1 ? 's' : ''}
+                   {searchQuery && <span style={{ color: 'rgba(255,255,255,0.35)' }}> ┬╖ "{searchQuery}"</span>}
+                 </div>
+-              </div>
++              </div>}
+ 
+               <div className="page-content">
+                 {isLoading ? (
+@@ -150,7 +150,7 @@ export default function App() {
+                       style={{ height: '100%' }}
+                     >
+                       {view === 'calendar'  && <SingleMonthCalendar posts={visiblePosts} onEditPost={handleEditPost} />}
+-                      {view === 'analytics' && <AnalyticsDashboard posts={posts} onEditPost={handleEditPost} />}
++                      {view === 'analytics' && <AnalyticsDashboard posts={visiblePosts} onEditPost={handleEditPost} />}
+                       {view === 'list'      && <ListView posts={visiblePosts} onDelete={handleDeletePost} onEdit={handleEditPost} />}
+                       {view === 'settings'  && <Settings />}
+                     </motion.div>
+diff --git a/src/components/CreatePostModal.jsx b/src/components/CreatePostModal.jsx
+index f431230..3ccf063 100644
+--- a/src/components/CreatePostModal.jsx
++++ b/src/components/CreatePostModal.jsx
+@@ -18,7 +18,7 @@ const today = new Date().toISOString().slice(0, 10)
+ 
+ export default function CreatePostModal({ onClose, onSave }) {
+   const [contentType, setContentType]           = useState('youtube')
+-  const [selectedPlatforms, setSelectedPlatforms] = useState(new Set(['x']))
++  const [selectedPlatform, setSelectedPlatform] = useState('x')
+   const [youtubeUrl, setYoutubeUrl]             = useState('')
+   const [topic, setTopic]                       = useState('')
+   const [content, setContent]                   = useState('')
+@@ -27,19 +27,11 @@ export default function CreatePostModal({ onClose, onSave }) {
+   const [isGenerating, setIsGenerating]         = useState(false)
+   const [isPosting, setIsPosting]               = useState(false)
+ 
+-  const charLimit  = selectedPlatforms.has('x') ? 280 : 3000
+-  const remaining  = charLimit - content.length
+-  const charPct    = Math.min((content.length / charLimit) * 100, 100)
++  const charLimit   = selectedPlatform === 'x' ? 280 : selectedPlatform === 'instagram' ? 2200 : 3000
++  const remaining   = charLimit - content.length
++  const charPct     = Math.min((content.length / charLimit) * 100, 100)
+   const isOverLimit = remaining < 0
+ 
+-  const togglePlatform = (id) => {
+-    setSelectedPlatforms(prev => {
+-      const next = new Set(prev)
+-      if (next.has(id)) { if (next.size > 1) next.delete(id) } else { next.add(id) }
+-      return next
+-    })
+-  }
+-
+   const handleGenerate = async () => {
+     const source = contentType === 'youtube' ? youtubeUrl : topic
+     if (!source.trim()) return
+@@ -51,7 +43,7 @@ export default function CreatePostModal({ onClose, onSave }) {
+         body: JSON.stringify({
+           youtubeUrl: contentType === 'youtube' ? youtubeUrl : undefined,
+           topic:      contentType === 'topic'   ? topic      : undefined,
+-          platforms:  Array.from(selectedPlatforms),
++          platforms:  [selectedPlatform],
+         }),
+       })
+       if (!res.ok) throw new Error('Generation failed')
+@@ -69,7 +61,7 @@ export default function CreatePostModal({ onClose, onSave }) {
+ 
+   const buildPost = (status) => ({
+     id: Date.now().toString(),
+-    platform: Array.from(selectedPlatforms)[0],
++    platform: selectedPlatform,
+     date: scheduleDate,
+     time: scheduleTime,
+     status,
+@@ -81,7 +73,7 @@ export default function CreatePostModal({ onClose, onSave }) {
+     if (!content.trim()) return
+     setIsPosting(true)
+     try {
+-      await socialService.postToSocials(content, Array.from(selectedPlatforms))
++      await socialService.postToSocials(content, [selectedPlatform])
+       onSave(buildPost('scheduled'))
+     } catch {
+       alert('Error posting. Check your Ayrshare configuration in Settings.')
+@@ -117,16 +109,16 @@ export default function CreatePostModal({ onClose, onSave }) {
+             <div className="label-caps">Platforms</div>
+             <div style={{ display: 'flex', gap: '8px' }}>
+               {PLATFORMS.map(({ id, label, color }) => (
+-                <button key={id} onClick={() => togglePlatform(id)} style={{
++                <button key={id} onClick={() => setSelectedPlatform(id)} style={{
+                   flex: 1, padding: '10px 8px', borderRadius: '10px',
+                   fontSize: '12px', fontWeight: '700',
+-                  background: selectedPlatforms.has(id) ? `${color}15` : 'rgba(255,255,255,0.02)',
+-                  border: `1px solid ${selectedPlatforms.has(id) ? `${color}32` : 'rgba(255,255,255,0.06)'}`,
+-                  color: selectedPlatforms.has(id) ? color : 'var(--text-muted)',
++                  background: selectedPlatform === id ? `${color}15` : 'rgba(255,255,255,0.02)',
++                  border: `1px solid ${selectedPlatform === id ? `${color}32` : 'rgba(255,255,255,0.06)'}`,
++                  color: selectedPlatform === id ? color : 'var(--text-muted)',
+                   cursor: 'pointer', transition: 'all 0.15s',
+                   display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px',
+                 }}>
+-                  <div style={{ width: 7, height: 7, borderRadius: '50%', background: selectedPlatforms.has(id) ? color : 'rgba(255,255,255,0.12)' }} />
++                  <div style={{ width: 7, height: 7, borderRadius: '50%', background: selectedPlatform === id ? color : 'rgba(255,255,255,0.12)' }} />
+                   {label}
+                 </button>
+               ))}
+diff --git a/src/components/Header.jsx b/src/components/Header.jsx
+index a75cd06..79e7ac6 100644
+--- a/src/components/Header.jsx
++++ b/src/components/Header.jsx
+@@ -16,7 +16,7 @@ export default function Header({ view, searchQuery, onSearch }) {
+         </h1>
+       </div>
+       <div className="header-right">
+-        <div style={{ position: 'relative' }}>
++        {view !== 'settings' && <div style={{ position: 'relative' }}>
+           <Search size={13} style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.25)', pointerEvents: 'none' }} />
+           <input
+             type="text"
+@@ -45,7 +45,7 @@ export default function Header({ view, searchQuery, onSearch }) {
+               <X size={12} />
+             </button>
+           )}
+-        </div>
++        </div>}
+       </div>
+     </header>
+   )
+diff --git a/src/components/ListView.jsx b/src/components/ListView.jsx
+index 2e33ace..daa3c32 100644
+--- a/src/components/ListView.jsx
++++ b/src/components/ListView.jsx
+@@ -69,7 +69,7 @@ export default function ListView({ posts, onDelete, onEdit }) {
+                     {post.status}
+                   </div>
+                   <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+-                    {post.date} ┬╖ {post.time}
++                    {post.date}{post.time ? ` ┬╖ ${post.time}` : ''}
+                   </span>
+                 </div>
+ 
+diff --git a/src/components/Settings.jsx b/src/components/Settings.jsx
+index 8b06a6b..b49fd5a 100644
+--- a/src/components/Settings.jsx
++++ b/src/components/Settings.jsx
+@@ -1,90 +1,130 @@
+ import { useState, useEffect } from 'react'
+ import { useUser } from '@clerk/clerk-react'
+-import { Save, Check, Loader2, ExternalLink, AlertCircle } from 'lucide-react'
++import { Save, Check, Loader2, ExternalLink, AlertCircle, User } from 'lucide-react'
+ import { storage } from '../lib/storage'
+ import { socialService } from '../lib/socials'
+ 
+-// ΓöÇΓöÇ Platform rows ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+-
+ const PLATFORM_DISPLAY = [
+-  { id: 'x',         label: 'X (Twitter)', badge: 'X',  color: '#E7E9EA' },
+-  { id: 'linkedin',  label: 'LinkedIn',    badge: 'in', color: '#60A5FA' },
+-  { id: 'instagram', label: 'Instagram',   badge: 'IG', color: '#F43F5E' },
++  { id: 'x',         label: 'X (Twitter)', badge: 'X',  color: '#E7E9EA', handleKey: 'handle_x',         placeholder: '@yourhandle'              },
++  { id: 'linkedin',  label: 'LinkedIn',    badge: 'in', color: '#60A5FA', handleKey: 'handle_linkedin',  placeholder: 'linkedin.com/in/yourname' },
++  { id: 'instagram', label: 'Instagram',   badge: 'IG', color: '#F43F5E', handleKey: 'handle_instagram', placeholder: '@yourhandle'              },
+ ]
+ 
+-// ΓöÇΓöÇ Main component ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++function SaveButton({ state, onClick, label = 'Save Changes', minWidth = 160 }) {
++  return (
++    <button
++      className="btn-primary"
++      style={{ width: 'auto', minWidth, fontSize: 13 }}
++      onClick={onClick}
++      disabled={state === 'saving'}
++    >
++      {state === 'saving' && <Loader2 size={13} style={{ animation: 'spin 0.8s linear infinite' }} />}
++      {state === 'saved'  && <Check size={13} />}
++      {state === 'error'  && <AlertCircle size={13} />}
++      {state === 'idle'   && <Save size={13} />}
++      {state === 'saving' ? 'SavingΓÇª' : state === 'saved' ? 'Saved!' : state === 'error' ? 'Error ΓÇö retry' : label}
++    </button>
++  )
++}
+ 
+ export default function Settings() {
+   const { user } = useUser()
+ 
+-  // Brand voice form state
+-  const [form, setForm] = useState({
++  // ΓöÇΓöÇ Profile state (profiles table) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++  const [profile, setProfile] = useState({
++    display_name:     '',
++    bio:              '',
++    handle_x:         '',
++    handle_linkedin:  '',
++    handle_instagram: '',
++  })
++  const [profileSave, setProfileSave] = useState('idle')
++
++  // ΓöÇΓöÇ Brand voice state (brand_voice table) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++  const [voice, setVoice] = useState({
+     brand_name:       '',
+     tone:             '',
+     audience:         '',
+     restricted_words: '',
+   })
++  const [voiceSave, setVoiceSave] = useState('idle')
+ 
+-  // Persisted Ayrshare profileKey (stored in brand_voice row)
+-  const [profileKey, setProfileKey] = useState(null)
++  // ΓöÇΓöÇ Ayrshare state ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++  const [profileKey,    setProfileKey]    = useState(null)
++  const [connectState,  setConnectState]  = useState('idle')
++  const [connectMsg,    setConnectMsg]    = useState('')
+ 
+-  // UI states
+-  const [isLoading,   setIsLoading]   = useState(true)
+-  const [saveState,   setSaveState]   = useState('idle')   // 'idle' | 'saving' | 'saved' | 'error'
+-  const [connectState, setConnectState] = useState('idle') // 'idle' | 'loading' | 'done' | 'error'
+-  const [connectMsg,  setConnectMsg]  = useState('')
++  const [isLoading, setIsLoading] = useState(true)
+ 
+-  // ΓöÇΓöÇ Load from Supabase on mount ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++  // ΓöÇΓöÇ Load both tables on mount ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+   useEffect(() => {
+     if (!user?.id) return
+-    storage.loadBrandVoice(user.id).then(data => {
+-      if (data) {
+-        setForm({
+-          brand_name:       data.brand_name       || '',
+-          tone:             data.tone             || '',
+-          audience:         data.audience         || '',
+-          restricted_words: data.restricted_words || '',
++    Promise.all([
++      storage.loadProfile(user.id),
++      storage.loadBrandVoice(user.id),
++    ]).then(([prof, bv]) => {
++      if (prof) {
++        setProfile({
++          display_name:     prof.display_name     || '',
++          bio:              prof.bio              || '',
++          handle_x:         prof.handle_x         || '',
++          handle_linkedin:  prof.handle_linkedin  || '',
++          handle_instagram: prof.handle_instagram || '',
+         })
+-        setProfileKey(data.ayrshare_profile_key || null)
++      }
++      if (bv) {
++        setVoice({
++          brand_name:       bv.brand_name       || '',
++          tone:             bv.tone             || '',
++          audience:         bv.audience         || '',
++          restricted_words: bv.restricted_words || '',
++        })
++        setProfileKey(bv.ayrshare_profile_key || null)
+       }
+       setIsLoading(false)
+     })
+   }, [user?.id])
+ 
+-  const set = (key) => (e) => setForm(prev => ({ ...prev, [key]: e.target.value }))
++  const setP = key => e => setProfile(prev => ({ ...prev, [key]: e.target.value }))
++  const setV = key => e => setVoice(prev => ({ ...prev, [key]: e.target.value }))
++
++  // ΓöÇΓöÇ Save profile ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++  const handleSaveProfile = async () => {
++    if (!user?.id || profileSave === 'saving') return
++    setProfileSave('saving')
++    const ok = await storage.saveProfile(profile, user.id)
++    setProfileSave(ok ? 'saved' : 'error')
++    if (ok) setTimeout(() => setProfileSave('idle'), 2500)
++  }
+ 
+   // ΓöÇΓöÇ Save brand voice ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+-  const handleSave = async () => {
+-    if (!user?.id || saveState === 'saving') return
+-    setSaveState('saving')
++  const handleSaveVoice = async () => {
++    if (!user?.id || voiceSave === 'saving') return
++    setVoiceSave('saving')
+     const ok = await storage.saveBrandVoice(
+-      { ...form, ayrshare_profile_key: profileKey },
++      { ...voice, ayrshare_profile_key: profileKey },
+       user.id
+     )
+-    setSaveState(ok ? 'saved' : 'error')
+-    if (ok) setTimeout(() => setSaveState('idle'), 2500)
++    setVoiceSave(ok ? 'saved' : 'error')
++    if (ok) setTimeout(() => setVoiceSave('idle'), 2500)
+   }
+ 
+-  // ΓöÇΓöÇ Ayrshare OAuth connect ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++  // ΓöÇΓöÇ Ayrshare connect ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+   const handleConnect = async () => {
+     if (connectState === 'loading') return
+     setConnectState('loading')
+     setConnectMsg('')
+     try {
+       const { url, profileKey: newKey, simulated } = await socialService.getConnectLink(profileKey)
+-
+-      // Persist the new profileKey immediately so posting works after connect
+       if (newKey && newKey !== profileKey) {
+         setProfileKey(newKey)
+-        await storage.saveBrandVoice({ ...form, ayrshare_profile_key: newKey }, user.id)
++        await storage.saveBrandVoice({ ...voice, ayrshare_profile_key: newKey }, user.id)
+       }
+-
+       if (simulated) {
+         setConnectMsg('AYRSHARE_API_KEY not set in .env.local ΓÇö running in simulation mode.')
+         setConnectState('done')
+         return
+       }
+-
+       window.open(url, '_blank', 'noopener,noreferrer')
+       setConnectMsg('Ayrshare opened in a new tab. Connect your accounts, then return here.')
+       setConnectState('done')
+@@ -94,12 +134,10 @@ export default function Settings() {
+     }
+   }
+ 
+-  // ΓöÇΓöÇ Render ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+-
+   if (isLoading) {
+     return (
+       <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--text-muted)', padding: '40px 0' }}>
+-        <Loader2 size={16} className="animate-spin" />
++        <div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} />
+         <span style={{ fontSize: 13 }}>Loading your settingsΓÇª</span>
+       </div>
+     )
+@@ -108,6 +146,79 @@ export default function Settings() {
+   return (
+     <div className="settings-view" style={{ maxWidth: 640 }}>
+ 
++      {/* ΓöÇΓöÇ Your Profile ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
++      <div className="settings-section">
++        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
++          <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
++            <User size={13} style={{ opacity: 0.45 }} />
++          </div>
++          <div className="settings-section-title" style={{ marginBottom: 0 }}>Your Profile</div>
++        </div>
++        <div className="settings-section-desc">
++          Your public identity. Social handles are shown in the Connected Accounts section and passed to AI workflows.
++        </div>
++
++        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
++          <div className="settings-field" style={{ marginBottom: 0 }}>
++            <label className="label-caps" style={{ marginTop: 0 }}>Display Name</label>
++            <input
++              className="settings-input"
++              type="text"
++              placeholder={user?.fullName || 'Your name'}
++              value={profile.display_name}
++              onChange={setP('display_name')}
++            />
++          </div>
++          <div className="settings-field" style={{ marginBottom: 0 }}>
++            <label className="label-caps" style={{ marginTop: 0 }}>Clerk Account</label>
++            <input
++              className="settings-input"
++              type="text"
++              value={user?.primaryEmailAddress?.emailAddress || ''}
++              readOnly
++              style={{ opacity: 0.45, cursor: 'default' }}
++            />
++          </div>
++        </div>
++
++        <div className="settings-field">
++          <label className="label-caps">Bio / Tagline</label>
++          <textarea
++            className="settings-textarea"
++            placeholder="e.g. Founder @ Estride ┬╖ Building AI-powered marketing tools"
++            value={profile.bio}
++            onChange={setP('bio')}
++            style={{ minHeight: 70 }}
++          />
++        </div>
++
++        <div className="label-caps" style={{ marginTop: 20, marginBottom: 12 }}>Social Handles</div>
++        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
++          {PLATFORM_DISPLAY.map(({ label, badge, color, handleKey, placeholder }) => (
++            <div key={handleKey} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
++              <div style={{
++                width: 32, height: 32, borderRadius: 8, flexShrink: 0,
++                background: `${color}12`, border: `1px solid ${color}22`,
++                display: 'flex', alignItems: 'center', justifyContent: 'center',
++                fontSize: 10, fontWeight: 800, color,
++              }}>
++                {badge}
++              </div>
++              <input
++                className="settings-input"
++                type="text"
++                placeholder={placeholder}
++                value={profile[handleKey]}
++                onChange={setP(handleKey)}
++                style={{ flex: 1 }}
++              />
++            </div>
++          ))}
++        </div>
++
++        <SaveButton state={profileSave} onClick={handleSaveProfile} label="Save Profile" />
++      </div>
++
+       {/* ΓöÇΓöÇ Brand Voice ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
+       <div className="settings-section">
+         <div className="settings-section-title">Brand Voice</div>
+@@ -116,13 +227,13 @@ export default function Settings() {
+         </div>
+ 
+         <div className="settings-field">
+-          <label className="label-caps">Your Name / Brand Name</label>
++          <label className="label-caps">Brand Name</label>
+           <input
+             className="settings-input"
+             type="text"
+             placeholder="e.g. Ajay ┬╖ Estride"
+-            value={form.brand_name}
+-            onChange={set('brand_name')}
++            value={voice.brand_name}
++            onChange={setV('brand_name')}
+           />
+         </div>
+ 
+@@ -132,8 +243,8 @@ export default function Settings() {
+             className="settings-input"
+             type="text"
+             placeholder="e.g. Direct, bold, data-driven, no fluff"
+-            value={form.tone}
+-            onChange={set('tone')}
++            value={voice.tone}
++            onChange={setV('tone')}
+           />
+         </div>
+ 
+@@ -143,8 +254,8 @@ export default function Settings() {
+             className="settings-input"
+             type="text"
+             placeholder="e.g. Startup founders, B2B marketers, solopreneurs"
+-            value={form.audience}
+-            onChange={set('audience')}
++            value={voice.audience}
++            onChange={setV('audience')}
+           />
+         </div>
+ 
+@@ -153,71 +264,54 @@ export default function Settings() {
+           <textarea
+             className="settings-textarea"
+             placeholder="e.g. synergy, leverage, circle back, game-changer, guru"
+-            value={form.restricted_words}
+-            onChange={set('restricted_words')}
++            value={voice.restricted_words}
++            onChange={setV('restricted_words')}
+             style={{ minHeight: 80 }}
+           />
+         </div>
+ 
+-        <button
+-          className="btn-primary"
+-          style={{ width: 'auto', minWidth: 160 }}
+-          onClick={handleSave}
+-          disabled={saveState === 'saving'}
+-        >
+-          {saveState === 'saving' && <Loader2 size={14} className="animate-spin" />}
+-          {saveState === 'saved'  && <Check size={14} />}
+-          {saveState === 'error'  && <AlertCircle size={14} />}
+-          {saveState === 'idle'   && <Save size={14} />}
+-
+-          {saveState === 'saving' ? 'SavingΓÇª'  :
+-           saveState === 'saved'  ? 'Saved!'   :
+-           saveState === 'error'  ? 'Error ΓÇö retry' :
+-           'Save Global Persona'}
+-        </button>
++        <SaveButton state={voiceSave} onClick={handleSaveVoice} label="Save Brand Voice" />
+       </div>
+ 
+       {/* ΓöÇΓöÇ Connected Accounts ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
+       <div className="settings-section">
+         <div className="settings-section-title">Connected Accounts</div>
+         <div className="settings-section-desc">
+-          Social accounts are linked via Ayrshare. One click below opens their secure OAuth manager where you can connect X, LinkedIn, and Instagram.
++          Social accounts are linked via Ayrshare. One click below opens their secure OAuth manager. Your handles above are stored separately in your profile.
+         </div>
+ 
+-        {PLATFORM_DISPLAY.map(({ id, label, badge, color }) => (
+-          <div key={id} className="account-row">
+-            <div className="account-info">
+-              <div
+-                className="platform-badge"
+-                style={{
+-                  width: 34, height: 34,
+-                  background: `${color}18`,
+-                  color,
+-                  fontSize: 11, fontWeight: 800,
+-                  borderRadius: 8,
+-                  border: `1px solid ${color}28`,
+-                  fontFamily: 'var(--font-display)',
+-                }}
+-              >
+-                {badge}
+-              </div>
+-              <div>
+-                <div className="account-name">{label}</div>
+-                <div className="account-handle" style={{ fontSize: 11 }}>
+-                  {profileKey
+-                    ? 'Profile linked ΓÇö manage connections via Ayrshare'
+-                    : 'Not connected ΓÇö click "Connect Accounts" below'}
++        {PLATFORM_DISPLAY.map(({ id, label, badge, color, handleKey }) => {
++          const handle = profile[handleKey]
++          const connected = !!profileKey
++          return (
++            <div key={id} className="account-row">
++              <div className="account-info">
++                <div
++                  className="platform-badge"
++                  style={{ width: 34, height: 34, background: `${color}18`, color, fontSize: 11, fontWeight: 800, borderRadius: 8, border: `1px solid ${color}28` }}
++                >
++                  {badge}
++                </div>
++                <div>
++                  <div className="account-name">{label}</div>
++                  <div className="account-handle">
++                    {handle
++                      ? <span style={{ color: color, opacity: 0.8 }}>{handle}</span>
++                      : connected
++                        ? 'Profile linked via Ayrshare'
++                        : 'Not connected ΓÇö click below to link'}
++                  </div>
+                 </div>
+               </div>
++              <div style={{
++                width: 7, height: 7, borderRadius: '50%',
++                background: connected ? '#10B981' : 'var(--text-muted)',
++                boxShadow: connected ? '0 0 6px rgba(16,185,129,0.5)' : 'none',
++                flexShrink: 0,
++              }} />
+             </div>
+-            <div style={{
+-              width: 8, height: 8, borderRadius: '50%',
+-              background: profileKey ? 'var(--status-published)' : 'var(--text-muted)',
+-              boxShadow: profileKey ? '0 0 6px rgba(34,197,94,0.5)' : 'none',
+-              flexShrink: 0,
+-            }} />
+-          </div>
+-        ))}
++          )
++        })}
+ 
+         <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 10 }}>
+           <button
+@@ -227,22 +321,17 @@ export default function Settings() {
+             disabled={connectState === 'loading'}
+           >
+             {connectState === 'loading'
+-              ? <><Loader2 size={15} className="animate-spin" /> Opening AyrshareΓÇª</>
+-              : <><ExternalLink size={15} /> {profileKey ? 'Manage Connected Accounts' : 'Connect Accounts via Ayrshare'}</>
++              ? <><Loader2 size={14} style={{ animation: 'spin 0.8s linear infinite' }} /> Opening AyrshareΓÇª</>
++              : <><ExternalLink size={14} /> {profileKey ? 'Manage Connected Accounts' : 'Connect Accounts via Ayrshare'}</>
+             }
+           </button>
+ 
+           {connectMsg && (
+             <div style={{
+-              fontSize: 12,
+-              padding: '10px 14px',
+-              borderRadius: 10,
+-              background: connectState === 'error'
+-                ? 'rgba(239,68,68,0.08)'
+-                : 'rgba(34,197,94,0.08)',
+-              border: `1px solid ${connectState === 'error' ? 'rgba(239,68,68,0.2)' : 'rgba(34,197,94,0.2)'}`,
++              fontSize: 12, padding: '10px 14px', borderRadius: 10, lineHeight: 1.5,
++              background: connectState === 'error' ? 'rgba(239,68,68,0.08)' : 'rgba(16,185,129,0.08)',
++              border: `1px solid ${connectState === 'error' ? 'rgba(239,68,68,0.2)' : 'rgba(16,185,129,0.2)'}`,
+               color: connectState === 'error' ? '#F87171' : '#86EFAC',
+-              lineHeight: 1.5,
+             }}>
+               {connectMsg}
+             </div>
+@@ -250,7 +339,7 @@ export default function Settings() {
+ 
+           {profileKey && (
+             <div style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'center' }}>
+-              Profile key: <code style={{ opacity: 0.5 }}>{profileKey.slice(0, 12)}ΓÇª</code>
++              Ayrshare key: <code style={{ opacity: 0.45 }}>{profileKey.slice(0, 12)}ΓÇª</code>
+             </div>
+           )}
+         </div>
+diff --git a/src/components/SingleMonthCalendar.jsx b/src/components/SingleMonthCalendar.jsx
+index a5f0eee..c3acf96 100644
+--- a/src/components/SingleMonthCalendar.jsx
++++ b/src/components/SingleMonthCalendar.jsx
+@@ -1,152 +1,260 @@
+-import React, { useState } from 'react'
++import { useState } from 'react'
+ import { ChevronLeft, ChevronRight } from 'lucide-react'
+-import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, isSameMonth, isSameDay, addDays } from 'date-fns'
++import {
++  format, addMonths, subMonths,
++  startOfMonth, endOfMonth,
++  startOfWeek, endOfWeek,
++  isSameMonth, isSameDay, addDays,
++} from 'date-fns'
+ 
+-const PLATFORM_COLORS = {
+-  x: '#1D9BF0',
+-  linkedin: '#3B82F6',
+-  instagram: '#E1306C'
++const PLATFORM_COLORS  = { x: '#E7E9EA', linkedin: '#60A5FA', instagram: '#E1306C' }
++const PLATFORM_LABELS  = { x: 'X', linkedin: 'in', instagram: 'IG' }
++const STATUS_COLORS    = { published: '#10B981', scheduled: '#F59E0B', draft: '#71717A' }
++const DAYS             = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
++
++function buildWeeks(currentMonth) {
++  const monthStart = startOfMonth(currentMonth)
++  const start      = startOfWeek(monthStart)
++  const end        = endOfWeek(endOfMonth(monthStart))
++  const weeks      = []
++  let week         = []
++  let day          = start
++  while (day <= end) {
++    week.push(day)
++    if (week.length === 7) { weeks.push(week); week = [] }
++    day = addDays(day, 1)
++  }
++  return weeks
+ }
+ 
+-export const SingleMonthCalendar = ({ posts = [], onEditPost }) => {
+-  const [currentMonth, setCurrentMonth] = useState(new Date())
++function NavBtn({ onClick, children }) {
++  return (
++    <button
++      onClick={onClick}
++      style={{
++        width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
++        borderRadius: 10,
++        background: 'rgba(255,255,255,0.03)',
++        border: '1px solid rgba(255,255,255,0.06)',
++        color: 'rgba(255,255,255,0.45)',
++        cursor: 'pointer', transition: 'all 0.15s',
++      }}
++      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'white' }}
++      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.color = 'rgba(255,255,255,0.45)' }}
++    >
++      {children}
++    </button>
++  )
++}
+ 
+-  const renderHeader = () => (
+-    <div className="flex items-center justify-between mb-8 px-2">
+-      <div>
+-        <h2 className="text-3xl font-black text-white tracking-tighter">
+-          {format(currentMonth, 'MMMM yyyy')}
+-        </h2>
+-        <p className="text-sm text-gray-500 mt-1">Manage your content schedule</p>
+-      </div>
+-      <div className="flex gap-2">
+-        <button 
+-          onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+-          className="p-3 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/5 transition-all"
+-        >
+-          <ChevronLeft size={20} className="text-white" />
+-        </button>
+-        <button 
+-          onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+-          className="p-3 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/5 transition-all"
+-        >
+-          <ChevronRight size={20} className="text-white" />
+-        </button>
++function PostChip({ post, onEditPost }) {
++  const statusColor   = STATUS_COLORS[post.status]  || STATUS_COLORS.draft
++  const platformColor = PLATFORM_COLORS[post.platform] || '#fff'
++  const platformLabel = PLATFORM_LABELS[post.platform] || '?'
++  const preview       = post.content?.split('\n')[0]?.slice(0, 30) || ''
++
++  return (
++    <div
++      onClick={() => onEditPost?.(post)}
++      title={post.content?.slice(0, 100)}
++      style={{
++        display: 'flex', alignItems: 'center', gap: 5,
++        padding: '3px 7px 3px 0',
++        borderRadius: 6,
++        background: 'rgba(255,255,255,0.03)',
++        border: '1px solid rgba(255,255,255,0.05)',
++        borderLeft: `2.5px solid ${statusColor}`,
++        cursor: onEditPost ? 'pointer' : 'default',
++        overflow: 'hidden',
++        transition: 'background 0.12s, border-color 0.12s',
++      }}
++      onMouseEnter={e => { if (onEditPost) { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.borderColor = `${statusColor}60` } }}
++      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderLeftColor = statusColor }}
++    >
++      <div style={{
++        fontSize: 7, fontWeight: 900, letterSpacing: '0.02em',
++        color: platformColor,
++        background: `${platformColor}14`,
++        padding: '1px 4px', borderRadius: 4,
++        flexShrink: 0,
++      }}>
++        {platformLabel}
+       </div>
++      <span style={{
++        fontSize: 10, fontWeight: 500,
++        color: 'rgba(255,255,255,0.5)',
++        overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
++        flex: 1, lineHeight: 1.2,
++      }}>
++        {preview}
++      </span>
+     </div>
+   )
++}
+ 
+-  const renderDays = () => {
+-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+-    return (
+-      <div className="grid grid-cols-7 mb-4">
+-        {days.map(day => (
+-          <div key={day} className="text-center text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 py-2">
+-            {day}
+-          </div>
++function DayCell({ day, posts, monthStart, onEditPost }) {
++  const dateStr        = format(day, 'yyyy-MM-dd')
++  const dayPosts       = posts.filter(p => p.date === dateStr)
++  const isCurrentMonth = isSameMonth(day, monthStart)
++  const isToday        = isSameDay(day, new Date())
++
++  return (
++    <div
++      style={{
++        position: 'relative',
++        padding: '9px 9px 7px',
++        borderRadius: 12,
++        background: isToday ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.01)',
++        border: `1px solid ${isToday ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.04)'}`,
++        opacity: isCurrentMonth ? 1 : 0.2,
++        display: 'flex', flexDirection: 'column', gap: 4,
++        minHeight: 96,
++        transition: 'background 0.15s, border-color 0.15s',
++      }}
++      onMouseEnter={e => {
++        if (!isToday && isCurrentMonth) {
++          e.currentTarget.style.background = 'rgba(255,255,255,0.03)'
++          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'
++        }
++      }}
++      onMouseLeave={e => {
++        if (!isToday) {
++          e.currentTarget.style.background = isToday ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.01)'
++          e.currentTarget.style.borderColor = isToday ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.04)'
++        }
++      }}
++    >
++      {/* Date row */}
++      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
++        <span style={{
++          fontSize: 13, fontWeight: isToday ? 900 : 600, lineHeight: 1,
++          color: isToday ? 'white' : 'rgba(255,255,255,0.55)',
++        }}>
++          {format(day, 'd')}
++        </span>
++        {dayPosts.length > 0 && (
++          <span style={{
++            fontSize: 9, fontWeight: 800,
++            color: 'rgba(255,255,255,0.3)',
++            background: 'rgba(255,255,255,0.05)',
++            border: '1px solid rgba(255,255,255,0.07)',
++            padding: '0px 5px', borderRadius: 99,
++          }}>
++            {dayPosts.length}
++          </span>
++        )}
++      </div>
++
++      {/* Post chips */}
++      <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
++        {dayPosts.slice(0, 3).map((post, idx) => (
++          <PostChip key={idx} post={post} onEditPost={onEditPost} />
+         ))}
++        {dayPosts.length > 3 && (
++          <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.2)', paddingLeft: 6 }}>
++            +{dayPosts.length - 3} more
++          </div>
++        )}
+       </div>
+-    )
+-  }
++    </div>
++  )
++}
++
++export const SingleMonthCalendar = ({ posts = [], onEditPost }) => {
++  const [currentMonth, setCurrentMonth] = useState(new Date())
++
++  const monthStart    = startOfMonth(currentMonth)
++  const monthKey      = format(currentMonth, 'yyyy-MM')
++  const weeks         = buildWeeks(currentMonth)
+ 
+-  const renderCells = () => {
+-    const monthStart = startOfMonth(currentMonth)
+-    const monthEnd = endOfMonth(monthStart)
+-    const startDate = startOfWeek(monthStart)
+-    const endDate = endOfWeek(monthEnd)
+-
+-    const rows = []
+-    let days = []
+-    let day = startDate
+-    let formattedDate = ""
+-
+-    while (day <= endDate) {
+-      for (let i = 0; i < 7; i++) {
+-        formattedDate = format(day, 'd')
+-        const cloneDay = day
+-        const dayPosts = posts.filter(p => p.date === format(cloneDay, 'yyyy-MM-dd'))
+-        const isCurrentMonth = isSameMonth(day, monthStart)
+-        const isToday = isSameDay(day, new Date())
+-
+-        days.push(
+-          <div
+-            key={day}
+-            className={`relative min-h-[140px] p-4 border border-white/[0.03] transition-all duration-300 group
+-              ${!isCurrentMonth ? 'opacity-20 grayscale' : 'opacity-100'}
+-              ${isToday ? 'bg-indigo-500/5' : 'hover:bg-white/[0.02]'}
+-            `}
+-            style={{
+-              borderRadius: isToday ? '24px' : '0',
+-              zIndex: isToday ? 10 : 1
+-            }}
+-          >
+-            {isToday && (
+-              <div className="absolute inset-0 border-2 border-indigo-500/30 rounded-[24px] pointer-events-none" />
++  const monthPosts    = posts.filter(p => p.date?.startsWith(monthKey))
++  const scheduledAmt  = monthPosts.filter(p => p.status === 'scheduled').length
++  const publishedAmt  = monthPosts.filter(p => p.status === 'published').length
++
++  return (
++    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
++
++      {/* ΓöÇΓöÇ Header ΓöÇΓöÇ */}
++      <div style={{
++        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
++        marginBottom: 16, paddingBottom: 14,
++        borderBottom: '1px solid rgba(255,255,255,0.05)',
++        flexShrink: 0,
++      }}>
++        {/* Left: title + stats */}
++        <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
++          <div>
++            <h2 style={{ fontSize: 22, fontWeight: 900, letterSpacing: '-0.04em', color: 'white', lineHeight: 1 }}>
++              {format(currentMonth, 'MMMM')}
++              <span style={{ color: 'rgba(255,255,255,0.22)', marginLeft: 7 }}>
++                {format(currentMonth, 'yyyy')}
++              </span>
++            </h2>
++          </div>
++          <div style={{ display: 'flex', gap: 8 }}>
++            {monthPosts.length > 0 && (
++              <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', padding: '2px 9px', borderRadius: 99 }}>
++                {monthPosts.length} total
++              </span>
+             )}
+-            
+-            <div className="flex justify-between items-start mb-3">
+-              <span className={`text-lg font-black tracking-tighter ${isToday ? 'text-indigo-400' : 'text-white'}`}>
+-                {formattedDate}
++            {publishedAmt > 0 && (
++              <span style={{ fontSize: 11, color: '#10B981', fontWeight: 700, background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.18)', padding: '2px 9px', borderRadius: 99 }}>
++                {publishedAmt} published
+               </span>
+-              {dayPosts.length > 0 && (
+-                <button className="opacity-0 group-hover:opacity-100 p-1 hover:bg-white/10 rounded-lg transition-all">
+-                  <MoreHorizontal size={14} className="text-gray-500" />
+-                </button>
+-              )}
+-            </div>
+-
+-            <div className="space-y-1.5 overflow-hidden">
+-              {dayPosts.slice(0, 3).map((post, idx) => (
+-                <div
+-                  key={idx}
+-                  onClick={() => onEditPost?.(post)}
+-                  className="flex items-center gap-2 px-2 py-1.5 bg-white/5 border border-white/5 rounded-lg overflow-hidden whitespace-nowrap text-ellipsis"
+-                  style={{ cursor: onEditPost ? 'pointer' : 'default', transition: 'background 0.15s' }}
+-                  onMouseEnter={e => { if (onEditPost) e.currentTarget.style.background = 'rgba(255,255,255,0.08)' }}
+-                  onMouseLeave={e => { e.currentTarget.style.background = '' }}
+-                  title={post.content?.slice(0, 60)}
+-                >
+-                  <div
+-                    className="w-1.5 h-1.5 rounded-full shrink-0"
+-                    style={{ backgroundColor: PLATFORM_COLORS[post.platform] }}
+-                  />
+-                  <span className="text-[10px] font-bold text-white/70 uppercase truncate">
+-                    {post.platform}
+-                  </span>
+-                </div>
+-              ))}
+-              {dayPosts.length > 3 && (
+-                <div className="text-[10px] font-black text-gray-500 pl-2">
+-                  +{dayPosts.length - 3} MORE
+-                </div>
+-              )}
+-            </div>
+-
+-            {/* Hover Action */}
+-            <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-all transform translate-y-1 group-hover:translate-y-0">
+-               <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center border border-white/10">
+-                 <span className="text-white text-xs">+</span>
+-               </div>
+-            </div>
++            )}
++            {scheduledAmt > 0 && (
++              <span style={{ fontSize: 11, color: '#F59E0B', fontWeight: 700, background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.18)', padding: '2px 9px', borderRadius: 99 }}>
++                {scheduledAmt} scheduled
++              </span>
++            )}
+           </div>
+-        )
+-        day = addDays(day, 1)
+-      }
+-      rows.push(
+-        <div className="grid grid-cols-7 border-collapse" key={day}>
+-          {days}
+         </div>
+-      )
+-      days = []
+-    }
+-    return <div className="border border-white/[0.03] rounded-[32px] overflow-hidden bg-white/[0.01]">{rows}</div>
+-  }
+ 
+-  return (
+-    <div className="social-calendar-wrapper">
+-      {renderHeader()}
+-      {renderDays()}
+-      {renderCells()}
++        {/* Right: legend + nav */}
++        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
++          {/* Legend */}
++          <div style={{ display: 'flex', gap: 12 }}>
++            {[['#10B981', 'Published'], ['#F59E0B', 'Scheduled'], ['#71717A', 'Draft']].map(([color, label]) => (
++              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
++                <div style={{ width: 7, height: 7, borderRadius: 2, background: color }} />
++                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.28)', fontWeight: 600 }}>{label}</span>
++              </div>
++            ))}
++          </div>
++          {/* Nav */}
++          <div style={{ display: 'flex', gap: 5 }}>
++            <NavBtn onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}><ChevronLeft size={14} /></NavBtn>
++            <NavBtn onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}><ChevronRight size={14} /></NavBtn>
++          </div>
++        </div>
++      </div>
++
++      {/* ΓöÇΓöÇ Day labels ΓöÇΓöÇ */}
++      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2, marginBottom: 4, flexShrink: 0 }}>
++        {DAYS.map(d => (
++          <div key={d} style={{ textAlign: 'center', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.2)', padding: '4px 0' }}>
++            {d}
++          </div>
++        ))}
++      </div>
++
++      {/* ΓöÇΓöÇ Grid ΓöÇΓöÇ */}
++      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2, overflow: 'auto' }}>
++        {weeks.map((week, wi) => (
++          <div key={wi} style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2, flex: 1 }}>
++            {week.map((day, di) => (
++              <DayCell
++                key={di}
++                day={day}
++                posts={posts}
++                monthStart={monthStart}
++                onEditPost={onEditPost}
++              />
++            ))}
++          </div>
++        ))}
++      </div>
++
+     </div>
+   )
+ }
+diff --git a/src/lib/storage.js b/src/lib/storage.js
+index 8749dab..f42ecc4 100644
+--- a/src/lib/storage.js
++++ b/src/lib/storage.js
+@@ -74,17 +74,7 @@ export const storage = {
+   },
+ 
+   // ΓöÇΓöÇ Brand Voice ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+-  // Requires this Supabase table (run once in SQL Editor):
+-  //
+-  //   CREATE TABLE brand_voice (
+-  //     user_id              TEXT PRIMARY KEY,
+-  //     brand_name           TEXT,
+-  //     tone                 TEXT,
+-  //     audience             TEXT,
+-  //     restricted_words     TEXT,
+-  //     ayrshare_profile_key TEXT,
+-  //     updated_at           TIMESTAMPTZ DEFAULT NOW()
+-  //   );
++  // Table: brand_voice (user_id PK, brand_name, tone, audience, restricted_words, ayrshare_profile_key, updated_at)
+ 
+   loadBrandVoice: async (userId) => {
+     if (!supabase || !userId) return null;
+@@ -94,7 +84,6 @@ export const storage = {
+         .select('*')
+         .eq('user_id', userId)
+         .single();
+-      // PGRST116 = no row found ΓÇö user hasn't saved yet, that's fine
+       if (error && error.code !== 'PGRST116') throw error;
+       return data || null;
+     } catch (e) {
+@@ -119,4 +108,40 @@ export const storage = {
+       return false;
+     }
+   },
++
++  // ΓöÇΓöÇ Profiles ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++  // Table: profiles (user_id PK, display_name, bio, handle_x, handle_linkedin, handle_instagram, updated_at)
++
++  loadProfile: async (userId) => {
++    if (!supabase || !userId) return null;
++    try {
++      const { data, error } = await supabase
++        .from('profiles')
++        .select('*')
++        .eq('user_id', userId)
++        .single();
++      if (error && error.code !== 'PGRST116') throw error;
++      return data || null;
++    } catch (e) {
++      console.warn('Supabase loadProfile failed:', e);
++      return null;
++    }
++  },
++
++  saveProfile: async (profileData, userId) => {
++    if (!supabase || !userId) return false;
++    try {
++      const { error } = await supabase
++        .from('profiles')
++        .upsert(
++          { ...profileData, user_id: userId, updated_at: new Date().toISOString() },
++          { onConflict: 'user_id' }
++        );
++      if (error) throw error;
++      return true;
++    } catch (e) {
++      console.warn('Supabase saveProfile failed:', e);
++      return false;
++    }
++  },
+ };

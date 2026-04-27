@@ -1,11 +1,10 @@
 import { supabase } from './supabase';
-import { mockPosts } from '../data/mockData';
 
 const FALLBACK_KEY = 'estride_fallback_posts';
 
 const getFallbackStorage = () => {
   const saved = localStorage.getItem(FALLBACK_KEY);
-  return saved ? JSON.parse(saved) : mockPosts;
+  return saved ? JSON.parse(saved) : [];
 };
 
 export const storage = {
